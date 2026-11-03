@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.routes import approval, auth, changes, config, leaves, rosters, utils
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -20,7 +21,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-@app.get("/api/v1/health")
-async def health() -> dict[str, str]:
-    return {"status": "ok"}
+# Include all routers
+app.include_router(auth.router)
+app.include_router(config.router)
+app.include_router(leaves.router)
+app.include_router(rosters.router)
+app.include_router(changes.router)
+app.include_router(approval.router)
+app.include_router(utils.router)
