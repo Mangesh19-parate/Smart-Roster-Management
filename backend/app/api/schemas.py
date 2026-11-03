@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from enum import Enum
-from typing import Any
+from typing import Any, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
@@ -286,17 +286,19 @@ class ProcessResponse(ProcessBase):
         from_attributes = True
 
 
+from typing import Optional
+
 class CoverageOverrideBase(BaseModel):
     process_id: UUID
     weekday: int | None = Field(default=None, ge=0, le=6)
-    date: date | None = None
+    override_date: Optional[date] = Field(default=None, alias="date")
     min_coverage: int = Field(ge=0)
 
-    @field_validator("weekday", "date")
+    @field_validator("weekday", "override_date")
     @classmethod
-    def check_weekday_xor_date(cls, v, info):
+    def check_weekday_xor_date(cls, v: int | None, info: Any) -> int | None:
         if info.field_name == "weekday" and v is not None:
-            if info.data.get("date") is not None:
+            if info.data.get("override_date") is not None:
                 raise ValueError("Exactly one of weekday or date must be provided")
         return v
 
@@ -312,6 +314,7 @@ class CoverageOverrideResponse(CoverageOverrideBase):
 
     class Config:
         from_attributes = True
+        populate_by_name = True
 
 
 class OverridesPutRequest(BaseModel):
@@ -345,7 +348,7 @@ class HolidayBase(BaseModel):
 
     @field_validator("brand_id")
     @classmethod
-    def check_brand_id(cls, v, info):
+    def check_brand_id(cls, v: UUID | None, info: Any) -> UUID | None:
         scope = info.data.get("scope")
         if scope == HolidayScope.BRAND and v is None:
             raise ValueError("brand_id required when scope is BRAND")
@@ -397,7 +400,7 @@ class LeaveBase(BaseModel):
 
     @field_validator("end_date")
     @classmethod
-    def check_end_after_start(cls, v, info):
+    def check_end_after_start(cls, v: date, info: Any) -> date:
         if "start_date" in info.data and v < info.data["start_date"]:
             raise ValueError("end_date must be >= start_date")
         return v
@@ -409,8 +412,8 @@ class LeaveCreate(LeaveBase):
 
 class LeaveUpdate(BaseModel):
     status: LeaveStatus | None = None
-    start_date: date | None = None
-    end_date: date | None = None
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
 
 
 class LeaveResponse(LeaveBase):
@@ -577,7 +580,7 @@ class IssueResponse(BaseModel):
     process_id: UUID | None = None
     employee_id: UUID | None = None
     pod_id: UUID | None = None
-    date: date | None = None
+    issue_date: date | None = Field(default=None, alias="date")
     message: str
     cause: str
     suggestion_hint: str | None = None
@@ -609,8 +612,8 @@ class CoverResponse(BaseModel):
 
 class LockRequest(BaseModel):
     employee_id: UUID | None = None
-    from_: date | None = Field(default=None, alias="from")
-    to: date | None = None
+    from_: Optional[date] = Field(default=None, alias="from")
+    to: Optional[date] = None
     locked: bool
 
 
@@ -644,7 +647,7 @@ class SuggestionAction(BaseModel):
     type: str  # "SET_ENTRY" | "ADD_COVER" | "REMOVE_COVER" | "SET_LOCK"
     employee_id: UUID | None = None
     process_id: UUID | None = None
-    date: date | None = None
+    action_date: Optional[date] = Field(default=None, alias="date")
     status: DayStatus | None = None
     locked: bool | None = None
 

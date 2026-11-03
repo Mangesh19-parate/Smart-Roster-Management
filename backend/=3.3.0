@@ -1,0 +1,21 @@
+Collecting python-jose[cryptography]
+  Using cached python_jose-3.5.0-py2.py3-none-any.whl.metadata (5.5 kB)
+Collecting ecdsa!=0.15 (from python-jose[cryptography])
+  Using cached ecdsa-0.19.2-py2.py3-none-any.whl.metadata (29 kB)
+Collecting rsa!=4.1.1,!=4.4,<5.0,>=4.0 (from python-jose[cryptography])
+  Using cached rsa-4.9.1-py3-none-any.whl.metadata (5.6 kB)
+Collecting pyasn1>=0.5.0 (from python-jose[cryptography])
+  Downloading pyasn1-0.6.5-py3-none-any.whl.metadata (8.4 kB)
+Requirement already satisfied: cryptography>=3.4.0 in .\.venv\Lib\site-packages (from python-jose[cryptography]) (50.0.2)
+Requirement already satisfied: cffi>=2.0.0 in .\.venv\Lib\site-packages (from cryptography>=3.4.0->python-jose[cryptography]) (2.1.1)
+Requirement already satisfied: pycparser in .\.venv\Lib\site-packages (from cffi>=2.0.0->cryptography>=3.4.0->python-jose[cryptography]) (3.12)
+Collecting six>=1.9.0 (from ecdsa!=0.15->python-jose[cryptography])
+  Using cached six-1.17.0-py2.py3-none-any.whl.metadata (1.7 kB)
+Using cached python_jose-3.5.0-py2.py3-none-any.whl (34 kB)
+Using cached rsa-4.9.1-py3-none-any.whl (34 kB)
+Using cached ecdsa-0.19.2-py2.py3-none-any.whl (150 kB)
+Downloading pyasn1-0.6.5-py3-none-any.whl (84 kB)
+Using cached six-1.17.0-py2.py3-none-any.whl (11 kB)
+Installing collected packages: six, pyasn1, rsa, ecdsa, python-jose
+
+Successfully installed ecdsa-0.19.2 pyasn1-0.6.5 python-jose-3.5.0 rsa-4.9.1 six-1.17.0
