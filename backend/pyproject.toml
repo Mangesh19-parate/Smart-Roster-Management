@@ -41,6 +41,10 @@ ignore = []
 "tests/*" = ["S101", "E501"]
 "app/db/models.py" = ["E501"]
 "seed/*.py" = ["E501", "B007"]
+"app/engine/feasibility.py" = ["E501"]
+"app/engine/rules/coverage.py" = ["E501"]
+"app/engine/rules/employee.py" = ["E501"]
+"app/engine/rules/preference.py" = ["E501"]
 
 [tool.mypy]
 strict = true
