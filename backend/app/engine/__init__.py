@@ -1,5 +1,6 @@
 from app.engine.availability import build_blocked_days, get_employee_blocked_days, is_blocked
 from app.engine.calendar import get_min_coverage, is_closed, required
+from app.engine.checker import CheckResult, check_coverage_independent, compute_coverage_brute_force
 from app.engine.coverage import calculate_coverage, get_coverage_summary, get_supply_for_process
 from app.engine.demand import build_demand_grid, get_brand_demand, get_process_demand
 from app.engine.feasibility import AssignMissingRule, StructHeadcountRule, StructNoBackupRule
@@ -11,6 +12,7 @@ from app.engine.rules.employee import (
     WOMissingRule,
 )
 from app.engine.rules.preference import FairnessSpreadRule, PodOffClusterRule, PrefOffMissedRule
+from app.engine.solver import RosterSolver, SolverConfig, solve_roster, solve_roster_with_previous
 from app.engine.types import (
     ApprovalStatus,
     Assignment,
@@ -64,4 +66,8 @@ __all__ = [
     "CovZeroRule", "CovBelowMinRule",
     "WOMissingRule", "ConsecMaxRule", "CapacityExceededRule", "CompOffUnusedRule",
     "PrefOffMissedRule", "FairnessSpreadRule", "PodOffClusterRule",
+    # Solver
+    "RosterSolver", "SolverConfig", "solve_roster", "solve_roster_with_previous",
+    # Checker
+    "check_coverage_independent", "compute_coverage_brute_force", "CheckResult",
 ]

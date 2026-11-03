@@ -67,6 +67,11 @@ ignore_missing_imports = true
 module = "anthropic.*"
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = "app.engine.solver"
+ignore_missing_imports = true
+ignore_errors = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]

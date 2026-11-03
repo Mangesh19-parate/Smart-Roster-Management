@@ -45,8 +45,12 @@ class CovZeroRule(Rule):
             demand_grid,
         )
 
+        supply = coverage["supply"]
         shortfalls = coverage["shortfalls"]
         for (proc_id, d), _shortfall in shortfalls.items():
+            # COV_ZERO only when supply is exactly 0
+            if supply.get((proc_id, d), 0) != 0:
+                continue
             # Find the process
             process = next((p for p in problem.processes if str(p.id) == proc_id), None)
             if not process:
