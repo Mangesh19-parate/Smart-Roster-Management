@@ -37,6 +37,9 @@ Thumbs.db
 # Supabase
 supabase/.temp
 
+# Docs (local documentation, not for repo)
+docs/
+
 # Test outputs
 playwright-report
 test-results
