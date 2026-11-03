@@ -38,7 +38,9 @@ select = ["E", "F", "I", "B", "UP", "S"]
 ignore = []
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S101"]
+"tests/*" = ["S101", "E501"]
+"app/db/models.py" = ["E501"]
+"seed/*.py" = ["E501", "B007"]
 
 [tool.mypy]
 strict = true
