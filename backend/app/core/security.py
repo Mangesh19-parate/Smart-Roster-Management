@@ -15,7 +15,7 @@ import httpx
 from app.core.config import get_settings
 from app.db.models import UserRole
 from app.db.session import get_db
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, Header, HTTPException, status
 from jose import JWTError, jwt
 from jose.exceptions import ExpiredSignatureError, JWTClaimsError
 from pydantic import BaseModel
@@ -168,7 +168,7 @@ async def verify_jwt(token: str) -> TokenClaims:
 
 
 async def get_current_principal(
-    authorization: str | None = None,
+    authorization: str | None = Header(default=None),
     db_session=None,  # Will be injected by FastAPI dependency
 ) -> Principal:
     """
@@ -187,7 +187,24 @@ async def get_current_principal(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    token = authorization[7:]  # Remove "Bearer "
+    token = authorization[7:]
+
+    # ponytail: demo mode bypass for local development without live auth provider
+    settings = get_settings()
+    if settings.demo_mode and token.startswith("demo-token-"):
+        role_map = {
+            "demo-token-manager": UserRole.MANAGER,
+            "demo-token-pod_lead": UserRole.POD_LEAD,
+            "demo-token-employee": UserRole.EMPLOYEE,
+        }
+        role = role_map.get(token, UserRole.MANAGER)
+        return Principal(
+            user_id=UUID("11111111-1111-1111-1111-111111111111"),
+            email=f"{role.value.lower()}@demo.local",
+            role=role,
+            employee_id=None if role == UserRole.MANAGER else UUID("22222222-2222-2222-2222-222222222222"),
+            pod_id=None if role == UserRole.MANAGER else UUID("33333333-3333-3333-3333-333333333333"),
+        )  # Remove "Bearer "
 
     try:
         claims = await verify_jwt(token)
@@ -225,7 +242,7 @@ async def get_current_principal(
 
 
 async def get_current_principal_dep(
-    authorization: str | None = None,
+    authorization: str | None = Header(default=None),
     db: Session = Depends(get_db),
 ) -> Principal:
     """FastAPI dependency for getting the current principal."""
@@ -237,6 +254,23 @@ async def get_current_principal_dep(
         )
 
     token = authorization[7:]
+
+    # ponytail: demo mode bypass for local development without live auth provider
+    settings = get_settings()
+    if settings.demo_mode and token.startswith("demo-token-"):
+        role_map = {
+            "demo-token-manager": UserRole.MANAGER,
+            "demo-token-pod_lead": UserRole.POD_LEAD,
+            "demo-token-employee": UserRole.EMPLOYEE,
+        }
+        role = role_map.get(token, UserRole.MANAGER)
+        return Principal(
+            user_id=UUID("11111111-1111-1111-1111-111111111111"),
+            email=f"{role.value.lower()}@demo.local",
+            role=role,
+            employee_id=None if role == UserRole.MANAGER else UUID("22222222-2222-2222-2222-222222222222"),
+            pod_id=None if role == UserRole.MANAGER else UUID("33333333-3333-3333-3333-333333333333"),
+        )
 
     try:
         claims = await verify_jwt(token)

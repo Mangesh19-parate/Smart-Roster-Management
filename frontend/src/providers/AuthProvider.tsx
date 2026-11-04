@@ -13,30 +13,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Initial session check
-    getSession().then((session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    getSession()
+      .then((session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+      })
+      .catch(() => {
+        setSession(null);
+        setUser(null);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
 
     // Listen for auth changes
-    const { data: { subscription } } = onAuthStateChange((session) => {
+    const sub = onAuthStateChange((session) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      sub?.data?.subscription?.unsubscribe?.();
+    };
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut().catch(() => {});
+    setSession(null);
+    setUser(null);
   };
 
   const refreshUser = async () => {
-    const session = await getSession();
-    setSession(session);
-    setUser(session?.user ?? null);
+    try {
+      const session = await getSession();
+      setSession(session);
+      setUser(session?.user ?? null);
+    } catch {
+      setSession(null);
+      setUser(null);
+    }
   };
 
   return (
