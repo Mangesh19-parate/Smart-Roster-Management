@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, require_manager, require_pod_lead_or_manager
@@ -139,7 +139,7 @@ async def update_pod(
     )
 
 
-@router.delete("/pods/{pod_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/pods/{pod_id}", status_code=status.HTTP_204_NO_CONTENT, response_class=Response, response_model=None)
 async def delete_pod(
     pod_id: UUID,
     confirm: bool = Query(default=False),
@@ -314,7 +314,7 @@ async def update_employee(
     )
 
 
-@router.delete("/employees/{employee_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/employees/{employee_id}", status_code=status.HTTP_204_NO_CONTENT, response_class=Response, response_model=None)
 async def delete_employee(
     employee_id: UUID,
     confirm: bool = Query(default=False),
@@ -435,7 +435,7 @@ async def update_brand(
     )
 
 
-@router.delete("/brands/{brand_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/brands/{brand_id}", status_code=status.HTTP_204_NO_CONTENT, response_class=Response, response_model=None)
 async def delete_brand(
     brand_id: UUID,
     confirm: bool = Query(default=False),
@@ -580,7 +580,7 @@ async def update_process(
     )
 
 
-@router.delete("/processes/{process_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/processes/{process_id}", status_code=status.HTTP_204_NO_CONTENT, response_class=Response, response_model=None)
 async def delete_process(
     process_id: UUID,
     confirm: bool = Query(default=False),
@@ -767,7 +767,7 @@ async def create_assignment(
     )
 
 
-@router.delete("/assignments/{assignment_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/assignments/{assignment_id}", status_code=status.HTTP_204_NO_CONTENT, response_class=Response, response_model=None)
 async def delete_assignment(
     assignment_id: UUID,
     db: Session = Depends(get_db),
@@ -861,7 +861,7 @@ async def create_holiday(
     )
 
 
-@router.delete("/holidays/{holiday_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/holidays/{holiday_id}", status_code=status.HTTP_204_NO_CONTENT, response_class=Response, response_model=None)
 async def delete_holiday(
     holiday_id: UUID,
     db: Session = Depends(get_db),

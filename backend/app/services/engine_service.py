@@ -17,6 +17,7 @@ from app.api.schemas import ImpactResponse
 from app.db.models import (
     Assignment,
     AssignmentType,
+    ApprovalStatus,
     Brand,
     CalendarMode,
     CoverageOverride,
@@ -31,6 +32,7 @@ from app.db.models import (
     Pod,
     Process,
     Roster,
+    RosterApproval,
     RosterStatus,
     Setting,
 )
@@ -577,6 +579,22 @@ def update_entry(
     if locked is not None:
         entry.locked = locked
     entry.updated_at = datetime.utcnow()
+
+    # Reset affected pod's approval if roster is IN_REVIEW
+    if roster.status == RosterStatus.IN_REVIEW:
+        emp = db.query(Employee).filter(Employee.id == employee_id).first()
+        if emp and emp.pod_id:
+            pod_approval = db.query(RosterApproval).filter(
+                and_(
+                    RosterApproval.roster_id == roster.id,
+                    RosterApproval.pod_id == emp.pod_id,
+                )
+            ).first()
+            if pod_approval:
+                pod_approval.status = ApprovalStatus.PENDING
+                pod_approval.comment = None
+                pod_approval.decided_by = None
+                pod_approval.decided_at = None
 
     # Validate
     _ = build_problem(db, month)

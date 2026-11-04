@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import approval, auth, changes, config, leaves, rosters, utils
+from app.api.routes import approval, auth, changes, config, explain, leaves, rosters, utils
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -28,4 +28,5 @@ app.include_router(leaves.router)
 app.include_router(rosters.router)
 app.include_router(changes.router)
 app.include_router(approval.router)
+app.include_router(explain.router)
 app.include_router(utils.router)

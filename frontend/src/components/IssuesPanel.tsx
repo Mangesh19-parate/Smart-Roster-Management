@@ -3,6 +3,7 @@
  */
 import { useState, useMemo } from 'react';
 import type { IssuesPanelProps } from './types';
+import { explainApi } from '../api/client';
 
 const SEVERITY_COLORS = {
   ERROR: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', badge: 'bg-red-100 text-red-700' },
@@ -18,6 +19,7 @@ export function IssuesPanel({
   onIssueClick,
   onClose,
   mobile = false,
+  month = '2026-12',
 }: IssuesPanelProps) {
   const [filter, setFilter] = useState<'all' | 'error' | 'warning' | 'structural'>('all');
   const [groupByRule, setGroupByRule] = useState(true);
@@ -116,6 +118,7 @@ export function IssuesPanel({
                 <IssueRow
                   key={issue.id}
                   issue={issue}
+                  month={month}
                   selected={selectedIssue?.id === issue.id}
                   onClick={() => onIssueClick(issue)}
                   colors={SEVERITY_COLORS[issue.severity as keyof typeof SEVERITY_COLORS]}
@@ -131,15 +134,37 @@ export function IssuesPanel({
 
 function IssueRow({
   issue,
+  month,
   selected,
   onClick,
   colors,
 }: {
   issue: any;
+  month: string;
   selected: boolean;
   onClick: () => void;
   colors: { bg: string; text: string; border: string; badge: string };
 }) {
+  const [explanation, setExplanation] = useState<{ explanation: string; source: string } | null>(null);
+  const [loadingExplain, setLoadingExplain] = useState(false);
+
+  const handleExplain = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (explanation) {
+      setExplanation(null);
+      return;
+    }
+    setLoadingExplain(true);
+    try {
+      const res = await explainApi.explain(month, issue.id);
+      setExplanation(res);
+    } catch (err: any) {
+      setExplanation({ explanation: `Failed to load explanation: ${err.message}`, source: 'template' });
+    } finally {
+      setLoadingExplain(false);
+    }
+  };
+
   const getLocation = () => {
     const parts = [];
     if (issue.brand_id) parts.push(`Brand: ${issue.brand_id.slice(0, 8)}`);
@@ -150,9 +175,12 @@ function IssueRow({
   };
 
   return (
-    <button
+    <div
       onClick={onClick}
-      className={`w-full text-left p-2 rounded-md transition-colors ${
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
+      className={`w-full text-left p-2 rounded-md transition-colors cursor-pointer ${
         selected
           ? 'bg-indigo-50 ring-2 ring-indigo-500'
           : 'hover:bg-slate-50'
@@ -163,7 +191,16 @@ function IssueRow({
           {issue.severity}
         </span>
         <div className="flex-1 min-w-0">
-          <div className="font-medium text-sm text-slate-900 truncate">{issue.message}</div>
+          <div className="flex items-start justify-between gap-1">
+            <div className="font-medium text-sm text-slate-900 truncate">{issue.message}</div>
+            <button
+              onClick={handleExplain}
+              disabled={loadingExplain}
+              className="px-1.5 py-0.5 text-[10px] font-medium rounded text-indigo-600 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 flex-shrink-0"
+            >
+              {loadingExplain ? '...' : explanation ? 'Hide' : 'Explain'}
+            </button>
+          </div>
           <div className="text-xs text-slate-500 mt-0.5">{issue.cause}</div>
           <div className="text-xs text-slate-400 mt-0.5">{getLocation()}</div>
           {issue.suggestion_hint && (
@@ -174,8 +211,22 @@ function IssueRow({
               {issue.suggestion_hint}
             </div>
           )}
+
+          {explanation && (
+            <div className="mt-2 p-2 bg-white rounded border border-indigo-200 text-xs text-slate-700 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-[10px] uppercase tracking-wider text-slate-500">Explanation</span>
+                <span className={`px-1.5 py-0.2 text-[9px] font-semibold rounded ${
+                  explanation.source === 'ai' ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-600'
+                }`}>
+                  {explanation.source === 'ai' ? 'AI-written' : 'Template'}
+                </span>
+              </div>
+              <p className="text-slate-800 leading-relaxed">{explanation.explanation}</p>
+            </div>
+          )}
         </div>
       </div>
-    </button>
+    </div>
   );
 }

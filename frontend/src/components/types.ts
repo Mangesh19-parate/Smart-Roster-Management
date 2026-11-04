@@ -8,6 +8,7 @@ export interface IssuesPanelProps {
   onIssueClick: (issue: any) => void;
   onClose: () => void;
   mobile?: boolean;
+  month?: string;
 }
 
 export interface SuggestionsDrawerProps {

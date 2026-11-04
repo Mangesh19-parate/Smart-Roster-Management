@@ -15,6 +15,10 @@ import { SuggestionsDrawer } from '../components/SuggestionsDrawer';
 import { EmployeeAgenda } from '../components/EmployeeAgenda';
 import { useDebounce } from '../hooks/useDebounce';
 import { format } from 'date-fns';
+import { Config } from './Config';
+import { StructuralReport } from './StructuralReport';
+import { LeaveDialog } from '../components/LeaveDialog';
+import { ApprovalsDialog } from '../components/ApprovalsDialog';
 
 type ViewMode = 'company' | 'pod' | 'brand' | 'process' | 'employee';
 
@@ -35,6 +39,10 @@ export function RosterShell() {
   const [generating, setGenerating] = useState(false);
   const [validating, setValidating] = useState(false);
   const [serverWaking, setServerWaking] = useState(false);
+  const [showConfig, setShowConfig] = useState(false);
+  const [showStructuralReport, setShowStructuralReport] = useState(false);
+  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+  const [showApprovals, setShowApprovals] = useState(false);
 
   // Sync URL with state
   useEffect(() => {
@@ -145,6 +153,12 @@ export function RosterShell() {
   const handleRegenerateFull = () => regenerateMutation.mutate('FULL');
   const handleValidate = () => validateMutation.mutate();
 
+  // Dialog handlers
+  const handleOpenConfig = () => setShowConfig(true);
+  const handleOpenStructuralReport = () => setShowStructuralReport(true);
+  const handleOpenLeaveDialog = () => setShowLeaveDialog(true);
+  const handleOpenApprovals = () => setShowApprovals(true);
+
   // Determine roster status
   const rosterStatus = rosterData?.roster?.status || 'DRAFT';
   const isPublished = rosterStatus === 'PUBLISHED';
@@ -178,6 +192,10 @@ export function RosterShell() {
         serverWaking={serverWaking}
         disabled={isPublished || isInReview}
         userRole={session?.user?.app_metadata?.role || 'EMPLOYEE'}
+        onOpenConfig={handleOpenConfig}
+        onOpenStructuralReport={handleOpenStructuralReport}
+        onOpenLeaveDialog={handleOpenLeaveDialog}
+        onOpenApprovals={handleOpenApprovals}
       />
 
       <div className="flex-1 flex overflow-hidden">
@@ -256,6 +274,7 @@ export function RosterShell() {
           {/* Issues Panel (Desktop) */}
           <IssuesPanel
             issues={issues}
+            month={month}
             selectedIssue={selectedIssue}
             onIssueClick={handleSuggestionClick}
             onClose={() => setSelectedIssue(null)}
@@ -277,12 +296,41 @@ export function RosterShell() {
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-lg max-h-[60vh] overflow-auto">
         <IssuesPanel
           issues={issues}
+          month={month}
           selectedIssue={selectedIssue}
           onIssueClick={handleSuggestionClick}
           onClose={() => setSelectedIssue(null)}
           mobile={true}
         />
       </div>
+
+      {/* Config Modal */}
+      {showConfig && (
+        <Config onClose={() => setShowConfig(false)} />
+      )}
+
+      {/* Structural Report Modal */}
+      {showStructuralReport && (
+        <StructuralReport month={month} onClose={() => setShowStructuralReport(false)} />
+      )}
+
+      {/* Leave Dialog */}
+      {showLeaveDialog && (
+        <LeaveDialog
+          month={month}
+          onClose={() => setShowLeaveDialog(false)}
+          employees={rosterData?.entries?.map((e: any) => e.employee).filter((e: any, i: number, arr: any[]) => arr.findIndex(x => x.id === e.id) === i) || []}
+        />
+      )}
+
+      {/* Approvals Dialog */}
+      {showApprovals && (
+        <ApprovalsDialog
+          month={month}
+          onClose={() => setShowApprovals(false)}
+          issues={issues}
+        />
+      )}
     </div>
   );
 }

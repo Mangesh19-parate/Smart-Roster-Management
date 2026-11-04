@@ -3,10 +3,12 @@ Roster routes: generate, fetch (all views), validate, issues, entries, covers, l
 """
 from __future__ import annotations
 
+import csv
+import io
 from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import (
@@ -451,11 +453,21 @@ async def edit_entry(
                 detail="Can only edit entries for your pod",
             )
 
-    entry, issues, impact = update_entry(
-        db, month, request.employee_id, request.date,
-        request.status, request.locked
-    )
-    db.commit()
+    try:
+        entry, issues, impact = update_entry(
+            db, month, request.employee_id, request.date,
+            request.status, request.locked
+        )
+        db.commit()
+    except ValueError as e:
+        msg = str(e)
+        if "published" in msg.lower():
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=msg)
+        if "locked" in msg.lower():
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=msg)
+        if "not found" in msg.lower():
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=msg)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
 
     return EntryEditResponse(
         entry=RosterEntryResponse(
@@ -678,6 +690,13 @@ async def get_fairness(
     return rows
 
 
+def _sanitize_csv_cell(value: object) -> str:
+    s = str(value) if value is not None else ""
+    if s and s[0] in ("=", "+", "-", "@", "\t", "\r"):
+        return f"'{s}"
+    return s
+
+
 @router.get("/rosters/{month}/export.csv")
 async def export_csv(
     month: str,
@@ -685,9 +704,8 @@ async def export_csv(
     id: UUID | None = Query(default=None),
     db: Session = Depends(get_db),
     principal: Principal = Depends(get_current_principal),
-):
-    """Export roster as CSV (simplified - returns data for now)."""
-    # In a real implementation, this would stream a CSV file
+) -> Response:
+    """Export roster as CSV with formula-injection safety."""
     data = get_roster_with_issues(db, month, view, id)
     if not data:
         raise HTTPException(
@@ -695,8 +713,27 @@ async def export_csv(
             detail="Roster not found",
         )
 
-    # Return JSON for now - actual CSV streaming would use StreamingResponse
-    return {"message": "CSV export not fully implemented", "data": str(data)}
+    roster = data["roster"]
+    entries = db.query(RosterEntry).filter(RosterEntry.roster_id == roster.id).all()
+    employees = {e.id: e.name for e in db.query(Employee).all()}
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Employee", "Date", "Status", "Locked"])
+    for entry in sorted(entries, key=lambda x: (employees.get(x.employee_id, ""), x.date)):
+        emp_name = employees.get(entry.employee_id, str(entry.employee_id))
+        writer.writerow([
+            _sanitize_csv_cell(emp_name),
+            str(entry.date),
+            entry.status.value,
+            str(entry.locked),
+        ])
+
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="roster-{month}.csv"'},
+    )
 
 
 @router.get("/rosters/{month}/export.xlsx")
@@ -706,6 +743,39 @@ async def export_xlsx(
     id: UUID | None = Query(default=None),
     db: Session = Depends(get_db),
     principal: Principal = Depends(get_current_principal),
-):
-    """Export roster as XLSX (simplified)."""
-    return {"message": "XLSX export not fully implemented"}
+) -> Response:
+    """Export roster as XLSX."""
+    import openpyxl
+
+    data = get_roster_with_issues(db, month, view, id)
+    if not data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Roster not found",
+        )
+
+    roster = data["roster"]
+    entries = db.query(RosterEntry).filter(RosterEntry.roster_id == roster.id).all()
+    employees = {e.id: e.name for e in db.query(Employee).all()}
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = f"Roster {month}"
+    ws.append(["Employee", "Date", "Status", "Locked"])
+    for entry in sorted(entries, key=lambda x: (employees.get(x.employee_id, ""), x.date)):
+        emp_name = employees.get(entry.employee_id, str(entry.employee_id))
+        ws.append([
+            _sanitize_csv_cell(emp_name),
+            str(entry.date),
+            entry.status.value,
+            str(entry.locked),
+        ])
+
+    bio = io.BytesIO()
+    wb.save(bio)
+    bio.seek(0)
+    return Response(
+        content=bio.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="roster-{month}.xlsx"'},
+    )

@@ -13,11 +13,13 @@ from app.api.deps import get_current_principal, get_db, require_manager
 from app.api.schemas import (
     ApprovalDecisionRequest,
     ApprovalDecisionResponse,
+    ApprovalResponse,
     EntryEditResponse,
     IssueResponse,
     RosterAmendRequest,
     RosterAmendResponse,
     RosterPublishResponse,
+    RosterResponse,
 )
 from app.core.security import Principal
 from app.db.models import (
@@ -69,16 +71,26 @@ async def submit_review(
             detail=f"Cannot submit: {len(error_issues)} ERROR issues remain",
         )
 
-    # Create approval records for each pod
+    # Create or reset approval records for each pod
     from app.db.models import Pod
     pods = db.query(Pod).all()
     for pod in pods:
-        approval = RosterApproval(
-            roster_id=roster.id,
-            pod_id=pod.id,
-            status=ApprovalStatus.PENDING,
-        )
-        db.add(approval)
+        existing = db.query(RosterApproval).filter(
+            RosterApproval.roster_id == roster.id,
+            RosterApproval.pod_id == pod.id,
+        ).first()
+        if existing:
+            existing.status = ApprovalStatus.PENDING
+            existing.comment = None
+            existing.decided_by = None
+            existing.decided_at = None
+        else:
+            approval = RosterApproval(
+                roster_id=roster.id,
+                pod_id=pod.id,
+                status=ApprovalStatus.PENDING,
+            )
+            db.add(approval)
 
     roster.status = RosterStatus.IN_REVIEW
     db.flush()
@@ -157,7 +169,7 @@ async def decide_approval(
     db.flush()
 
     return ApprovalDecisionResponse(
-        approval=ApprovalDecisionResponse.__fields__["approval"].annotation(
+        approval=ApprovalResponse(
             id=approval.id,
             roster_id=approval.roster_id,
             pod_id=approval.pod_id,
@@ -222,7 +234,7 @@ async def publish_roster(
     db.flush()
 
     return RosterPublishResponse(
-        roster=RosterPublishResponse.__fields__["roster"].annotation(
+        roster=RosterResponse(
             id=roster.id,
             month=roster.month,
             status=roster.status,
@@ -329,3 +341,34 @@ async def amend_roster(
             for i in issues
         ],
     )
+
+
+@router.get("/rosters/{month}/approvals", response_model=list[ApprovalResponse])
+async def list_approvals(
+    month: str,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(get_current_principal),
+) -> list[ApprovalResponse]:
+    """List approvals for a roster."""
+    roster = db.query(Roster).filter(Roster.month == month).first()
+    if not roster:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Roster not found",
+        )
+
+    approvals = db.query(RosterApproval).filter(RosterApproval.roster_id == roster.id).all()
+    return [
+        ApprovalResponse(
+            id=a.id,
+            roster_id=a.roster_id,
+            pod_id=a.pod_id,
+            status=a.status,
+            comment=a.comment,
+            decided_by=a.decided_by,
+            decided_at=a.decided_at,
+            created_at=a.created_at,
+            updated_at=a.updated_at,
+        )
+        for a in approvals
+    ]
