@@ -7,14 +7,17 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { SettingsTab } from '../components/SettingsTab';
 
-type ConfigTab = 'employees' | 'pods' | 'brands' | 'processes' | 'assignments' | 'holidays' | 'settings';
+export type ConfigTab = 'employees' | 'pods' | 'brands' | 'processes' | 'assignments' | 'holidays' | 'settings';
 
 interface ConfigProps {
   onClose?: () => void;
+  initialTab?: ConfigTab;
 }
 
-export function Config({ onClose }: ConfigProps) {
-  const [activeTab, setActiveTab] = useState<ConfigTab>('employees');
+export function Config({ onClose, initialTab = 'employees' }: ConfigProps) {
+  const [selectedTab, setSelectedTab] = useState<ConfigTab | null>(null);
+  const activeTab = selectedTab ?? initialTab;
+  const setActiveTab = (tab: ConfigTab) => setSelectedTab(tab);
   const queryClient = useQueryClient();
 
   // Fetch all data

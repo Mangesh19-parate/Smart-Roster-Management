@@ -1,9 +1,12 @@
 /**
- * Roster Grid - Main grid component with sticky headers and columns
+ * RosterGrid - High-performance Enterprise Roster Matrix
+ * Sticky headers, sticky employee rail, lock indicators, cell edit modal, and conflict highlights.
  */
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useState } from 'react';
 import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
+import { Lock } from 'lucide-react';
 import { STATUS_CODES, getStatusStyle } from '../utils/statusColors';
+import { CellEditModal } from './CellEditModal';
 
 interface RosterGridProps {
   rosterData: any;
@@ -12,9 +15,14 @@ interface RosterGridProps {
   viewId: string | null;
   issues: any[];
   selectedIssue: any | null;
-  onCellEdit: (employeeId: string, date: string, status: string) => void;
+  onCellEdit: (employeeId: string, date: string, status: string, locked?: boolean, reason?: string) => void;
   onIssueClick: (issue: any) => void;
+  searchQuery?: string;
+  statusFilter?: string;
+  isSavingEdit?: boolean;
 }
+
+const DEFAULT_TODAY_STR = format(new Date(), 'yyyy-MM-dd');
 
 export function RosterGrid({
   rosterData,
@@ -25,19 +33,34 @@ export function RosterGrid({
   selectedIssue,
   onCellEdit,
   onIssueClick,
+  searchQuery = '',
+  statusFilter = 'ALL',
+  isSavingEdit = false,
 }: RosterGridProps) {
+  // Modal state for cell editing
+  const [editingCell, setEditingCell] = useState<{
+    employee: any;
+    date: string;
+    status: string;
+    isLocked: boolean;
+    issues: any[];
+  } | null>(null);
+
+  // Month days
   const days = useMemo(() => {
     const start = startOfMonth(parseISO(`${month}-01`));
     const end = endOfMonth(start);
     return eachDayOfInterval({ start, end });
   }, [month]);
 
-  // Group entries by employee
+  const todayStr = DEFAULT_TODAY_STR;
+
+  // Map employees
   const employees = useMemo(() => {
     const empMap = new Map<string, any>();
 
-    // Seed from rosterData.employees if present
-    if (Array.isArray(rosterData.employees)) {
+    // Seed from rosterData.employees
+    if (Array.isArray(rosterData?.employees)) {
       rosterData.employees.forEach((emp: any) => {
         empMap.set(emp.id, {
           id: emp.id,
@@ -51,178 +74,313 @@ export function RosterGrid({
       });
     }
 
-    rosterData.entries.forEach((entry: any) => {
-      if (!empMap.has(entry.employee_id)) {
-        empMap.set(entry.employee_id, {
-          id: entry.employee_id,
-          name: entry.employee?.name || 'Unknown',
-          pod: entry.employee?.pod?.name || '',
-          pod_id: entry.employee?.pod_id || entry.employee?.pod?.id || '',
-          role: entry.employee?.role || 'AGENT',
-          entries: new Map<string, any>(),
-          covers: new Map<string, any>(),
-        });
-      }
-      const emp = empMap.get(entry.employee_id);
-      emp.entries.set(entry.date, entry);
-    });
+    // Populate entries
+    if (Array.isArray(rosterData?.entries)) {
+      rosterData.entries.forEach((entry: any) => {
+        if (!empMap.has(entry.employee_id)) {
+          empMap.set(entry.employee_id, {
+            id: entry.employee_id,
+            name: entry.employee?.name || 'Unknown',
+            pod: entry.employee?.pod?.name || '',
+            pod_id: entry.employee?.pod_id || entry.employee?.pod?.id || '',
+            role: entry.employee?.role || 'AGENT',
+            entries: new Map<string, any>(),
+            covers: new Map<string, any>(),
+          });
+        }
+        const emp = empMap.get(entry.employee_id);
+        emp.entries.set(entry.date, entry);
+      });
+    }
 
-    // Add covers
-    rosterData.covers.forEach((cover: any) => {
-      const emp = empMap.get(cover.employee_id);
-      if (emp) {
-        const key = `${cover.process_id}-${cover.date}`;
-        if (!emp.covers.has(key)) emp.covers.set(key, []);
-        emp.covers.get(key).push(cover);
-      }
-    });
+    // Populate covers
+    if (Array.isArray(rosterData?.covers)) {
+      rosterData.covers.forEach((cover: any) => {
+        const emp = empMap.get(cover.employee_id);
+        if (emp) {
+          const key = `${cover.process_id}-${cover.date}`;
+          if (!emp.covers.has(key)) emp.covers.set(key, []);
+          emp.covers.get(key).push(cover);
+        }
+      });
+    }
 
     return Array.from(empMap.values()).sort((a, b) => a.name.localeCompare(b.name));
-  }, [rosterData.entries, rosterData.covers, rosterData.employees]);
+  }, [rosterData]);
 
-  // Filter employees based on view
+  // Filter employees
   const filteredEmployees = useMemo(() => {
-    if (view === 'company') return employees;
+    let result = employees;
+
+    // View filter
     if (view === 'pod' && viewId) {
-      return employees.filter((e) => e.pod_id === viewId || e.pod === viewId);
+      result = result.filter((e) => e.pod_id === viewId || e.pod === viewId);
+    } else if (view === 'employee' && viewId) {
+      result = result.filter((e) => e.id === viewId);
     }
-    if (view === 'brand' && viewId) {
-      return employees;
+
+    // Search query filter (name or role)
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter(
+        (e) => e.name.toLowerCase().includes(q) || (e.role && e.role.toLowerCase().includes(q)) || (e.pod && e.pod.toLowerCase().includes(q))
+      );
     }
-    if (view === 'process' && viewId) {
-      return employees;
+
+    // Status filter (keeps employees who have at least one shift matching statusFilter)
+    if (statusFilter !== 'ALL') {
+      result = result.filter((e) => {
+        for (const entry of e.entries.values()) {
+          if (entry.status === statusFilter) return true;
+        }
+        return false;
+      });
     }
-    if (view === 'employee' && viewId) {
-      return employees.filter((e) => e.id === viewId);
-    }
-    return employees;
-  }, [employees, view, viewId]);
+
+    return result;
+  }, [employees, view, viewId, searchQuery, statusFilter]);
+
+  // Get cell entry
+  const getCellEntry = useCallback((employee: any, date: string) => {
+    return employee.entries.get(date);
+  }, []);
 
   // Get status for a cell
-  const getCellStatus = useCallback((employee: any, date: string) => {
-    const entry = employee.entries.get(date);
-    if (entry) {
-      // Check if covering
-      const hasCover = Array.from(employee.covers.values()).some((covers: any) =>
-        Array.isArray(covers) && covers.some((c: any) => c.date === date)
-      );
-      if (hasCover && entry.status === 'WORK') return 'COVER';
-      return entry.status;
-    }
-    // Check if closed day
-    const demand = rosterData.demand?.find((d: any) => d.date === date);
-    if (demand && demand.required === 0) return 'CLOSED';
-    return null;
-  }, [rosterData.demand]);
+  const getCellStatus = useCallback(
+    (employee: any, date: string) => {
+      const entry = employee.entries.get(date);
+      if (entry) {
+        // Check if covering
+        const hasCover = Array.from(employee.covers.values()).some((covers: any) =>
+          Array.isArray(covers) && covers.some((c: any) => c.date === date)
+        );
+        if (hasCover && entry.status === 'WORK') return 'COVER';
+        return entry.status;
+      }
+      const demand = rosterData?.demand?.find((d: any) => d.date === date);
+      if (demand && demand.required === 0) return 'CLOSED';
+      return null;
+    },
+    [rosterData?.demand]
+  );
 
   // Get cell issues
-  const getCellIssues = useCallback((employeeId: string, date: string, processId?: string) => {
-    return issues.filter((issue) => {
-      if (issue.employee_id && issue.employee_id !== employeeId) return false;
-      if (issue.date && issue.date !== date) return false;
-      if (processId && issue.process_id && issue.process_id !== processId) return false;
-      return true;
-    });
-  }, [issues]);
+  const getCellIssues = useCallback(
+    (employeeId: string, date: string, processId?: string) => {
+      return issues.filter((issue) => {
+        if (issue.employee_id && issue.employee_id !== employeeId) return false;
+        if (issue.date && issue.date !== date) return false;
+        if (processId && issue.process_id && issue.process_id !== processId) return false;
+        return true;
+      });
+    },
+    [issues]
+  );
 
   // Check if cell has error/warning
-  const getCellSeverity = useCallback((employeeId: string, date: string) => {
-    const cellIssues = getCellIssues(employeeId, date);
-    if (cellIssues.some((i) => i.severity === 'ERROR')) return 'ERROR';
-    if (cellIssues.some((i) => i.severity === 'WARNING')) return 'WARNING';
-    return null;
-  }, [getCellIssues]);
+  const getCellSeverity = useCallback(
+    (employeeId: string, date: string) => {
+      const cellIssues = getCellIssues(employeeId, date);
+      if (cellIssues.some((i) => i.severity === 'ERROR')) return 'ERROR';
+      if (cellIssues.some((i) => i.severity === 'WARNING')) return 'WARNING';
+      return null;
+    },
+    [getCellIssues]
+  );
 
-  // Render cell content
-  const renderCell = (employee: any, date: string) => {
-    const status = getCellStatus(employee, date);
-    const severity = getCellSeverity(employee.id, date);
-    const isSelected = selectedIssue && getCellIssues(employee.id, date).some((i: any) => i.id === selectedIssue.id);
+  const handleCellClick = (employee: any, date: string) => {
+    const entry = getCellEntry(employee, date);
+    const status = getCellStatus(employee, date) || 'WORK';
+    const isLocked = entry ? !!entry.locked : false;
+    const cellIssues = getCellIssues(employee.id, date);
 
-    if (!status) return null;
+    setEditingCell({
+      employee,
+      date,
+      status: status === 'COVER' ? 'WORK' : status,
+      isLocked,
+      issues: cellIssues,
+    });
+  };
 
-    const styles = getStatusStyle(status);
-    const code = STATUS_CODES[status] ?? '?';
-    const styleBg = styles.bg;
-    const styleText = styles.text;
-    const styleBorder = styles.border;
-
-    const baseClasses = `
-      w-8 h-7 md:w-8 md:h-7 flex items-center justify-center text-xs font-medium
-      border ${styleBorder}
-      ${styleBg} ${styleText}
-      ${severity === 'ERROR' ? 'ring-2 ring-red-500' : ''}
-      ${severity === 'WARNING' ? 'ring-2 ring-amber-500' : ''}
-      ${isSelected ? 'ring-2 ring-indigo-500 ring-offset-2' : ''}
-      cursor-pointer transition-all
-      hover:shadow-md hover:z-10
-    `;
-
-    return (
-      <td
-        key={date}
-        className={baseClasses}
-        title={`${employee.name} - ${format(parseISO(date), 'EEE, MMM d')} - ${status}`}
-        onClick={() => {
-          if (status === 'WORK' || status === 'WO' || status === 'COVER') {
-            onCellEdit(employee.id, date, status === 'WORK' ? 'WO' : 'WORK');
-          }
-        }}
-        onContextMenu={(evt) => {
-          evt.preventDefault();
-          const cellIssues = getCellIssues(employee.id, date);
-          if (cellIssues.length > 0) {
-            onIssueClick(cellIssues[0]);
-          }
-        }}
-      >
-        {code}
-      </td>
-    );
+  const handleModalSave = (data: {
+    employee_id: string;
+    date: string;
+    status: string;
+    locked: boolean;
+    reason?: string;
+  }) => {
+    onCellEdit(data.employee_id, data.date, data.status, data.locked, data.reason);
+    setEditingCell(null);
   };
 
   if (filteredEmployees.length === 0) {
     return (
-      <div className="text-center py-12 text-slate-500">
-        No employees to display for this view.
+      <div className="bg-white rounded-lg border border-slate-200 p-12 text-center shadow-xs">
+        <p className="text-sm font-medium text-slate-600">No employees match the current filters.</p>
+        <p className="text-xs text-slate-400 mt-1">Try clearing search terms or selecting another view.</p>
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto overflow-y-auto">
-      <table className="w-full min-w-max border-collapse" role="grid">
-        <thead className="sticky top-0 z-10 bg-white border-b border-slate-200">
-          <tr>
-            <th className="sticky left-0 z-20 w-40 md:w-48 px-2 py-1.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider bg-white border-r border-slate-200">
-              Employee
-            </th>
-            {days.map((day) => (
-              <th
-                key={format(day, 'yyyy-MM-dd')}
-                className="sticky top-0 z-10 w-8 h-7 min-w-8 px-1 py-1 text-center text-xs font-medium text-slate-500 bg-white border-r border-slate-200"
-                style={{ width: '32px' }}
-              >
-                <div className="font-semibold">{format(day, 'd')}</div>
-                <div className="text-[10px] text-slate-400">{format(day, 'EEE')}</div>
+    <div className="bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden flex flex-col">
+      <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-320px)] focus:outline-none">
+        <table className="w-full border-collapse text-left" role="grid">
+          {/* Header Row */}
+          <thead className="sticky top-0 z-20 bg-slate-50 border-b border-slate-200 select-none">
+            <tr>
+              <th className="sticky left-0 z-30 w-48 min-w-48 max-w-48 px-3 py-2 text-xs font-semibold text-slate-700 uppercase tracking-wider bg-slate-50 border-r border-slate-200 shadow-[1px_0_0_0_#e2e8f0]">
+                Employee
               </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {filteredEmployees.map((employee, rowIndex) => (
-            <tr key={employee.id} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
-              <td className="sticky left-0 z-20 w-40 md:w-48 px-2 py-1 border-r border-slate-200 bg-white">
-                <div className="font-medium text-sm text-slate-900 truncate" title={employee.name}>
-                  {employee.name}
-                </div>
-                <div className="text-xs text-slate-500 truncate">{employee.pod}</div>
-              </td>
-              {days.map((day) => renderCell(employee, format(day, 'yyyy-MM-dd')))}
+              {days.map((day) => {
+                const dateKey = format(day, 'yyyy-MM-dd');
+                const isToday = dateKey === todayStr;
+                const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+
+                return (
+                  <th
+                    key={dateKey}
+                    id={`col-${dateKey}`}
+                    className={`sticky top-0 z-20 w-8.5 min-w-8.5 px-0.5 py-1.5 text-center text-xs font-medium border-r border-slate-200 transition-colors ${
+                      isToday
+                        ? 'bg-indigo-50/90 text-indigo-900 font-bold'
+                        : isWeekend
+                        ? 'bg-slate-100/70 text-slate-600'
+                        : 'bg-slate-50 text-slate-600'
+                    }`}
+                  >
+                    <div className="text-[11px] leading-tight font-semibold">{format(day, 'd')}</div>
+                    <div className="text-[9px] uppercase tracking-tighter text-slate-400 leading-none">
+                      {format(day, 'EEE')}
+                    </div>
+                  </th>
+                );
+              })}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+
+          {/* Table Body */}
+          <tbody className="divide-y divide-slate-100">
+            {filteredEmployees.map((employee, rowIndex) => {
+              const isEven = rowIndex % 2 === 0;
+
+              return (
+                <tr
+                  key={employee.id}
+                  className={`hover:bg-indigo-50/20 transition-colors ${isEven ? 'bg-white' : 'bg-slate-50/40'}`}
+                >
+                  {/* Sticky Employee Column */}
+                  <td
+                    className={`sticky left-0 z-10 w-48 min-w-48 max-w-48 px-3 py-1.5 border-r border-slate-200 shadow-[1px_0_0_0_#e2e8f0] ${
+                      isEven ? 'bg-white' : 'bg-slate-50/95'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-semibold text-xs text-slate-900 truncate" title={employee.name}>
+                        {employee.name}
+                      </span>
+                      {employee.pod && (
+                        <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded">
+                          {employee.pod}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[10px] text-slate-400 truncate mt-0.5">{employee.role}</div>
+                  </td>
+
+                  {/* Grid Cells */}
+                  {days.map((day) => {
+                    const date = format(day, 'yyyy-MM-dd');
+                    const status = getCellStatus(employee, date);
+                    const entry = getCellEntry(employee, date);
+                    const severity = getCellSeverity(employee.id, date);
+                    const isLocked = entry ? !!entry.locked : false;
+                    const isSelected =
+                      selectedIssue &&
+                      getCellIssues(employee.id, date).some((i: any) => i.id === selectedIssue.id);
+
+                    if (!status) {
+                      return (
+                        <td
+                          key={date}
+                          className="w-8.5 min-w-8.5 h-8 border-r border-slate-100 bg-slate-50/20"
+                        />
+                      );
+                    }
+
+                    const styles = getStatusStyle(status);
+                    const code = STATUS_CODES[status] ?? '?';
+                    const isToday = date === todayStr;
+
+                    return (
+                      <td
+                        key={date}
+                        onClick={() => handleCellClick(employee, date)}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          const cellIssues = getCellIssues(employee.id, date);
+                          if (cellIssues.length > 0) {
+                            onIssueClick(cellIssues[0]);
+                          }
+                        }}
+                        className={`relative w-8.5 min-w-8.5 h-8 p-0 border-r border-slate-200/80 cursor-pointer select-none text-center transition-all ${
+                          isToday ? 'bg-indigo-50/30' : ''
+                        }`}
+                        title={`${employee.name} • ${format(day, 'MMM d')} • ${status}${isLocked ? ' (Locked)' : ''}`}
+                      >
+                        <div
+                          className={`w-full h-full flex items-center justify-center text-[11px] font-semibold transition-all relative ${styles.bg} ${styles.text} hover:opacity-85 ${
+                            severity === 'ERROR'
+                              ? 'ring-2 ring-red-500 ring-inset z-10'
+                              : severity === 'WARNING'
+                              ? 'ring-2 ring-amber-500 ring-inset z-10'
+                              : ''
+                          } ${isSelected ? 'ring-2 ring-indigo-600 ring-offset-1 z-10' : ''}`}
+                        >
+                          <span>{code}</span>
+
+                          {/* Lock Indicator */}
+                          {isLocked && (
+                            <span className="absolute top-0.5 right-0.5" title="Locked Shift">
+                              <Lock className="w-2.5 h-2.5 text-slate-700/80 stroke-[2.5]" />
+                            </span>
+                          )}
+
+                          {/* Issue Dot */}
+                          {severity && (
+                            <span
+                              className={`absolute bottom-0.5 right-0.5 w-1.5 h-1.5 rounded-full ${
+                                severity === 'ERROR' ? 'bg-red-600' : 'bg-amber-500'
+                              }`}
+                            />
+                          )}
+                        </div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Cell Edit Modal */}
+      {editingCell && (
+        <CellEditModal
+          key={`${editingCell.employee.id}-${editingCell.date}`}
+          isOpen={!!editingCell}
+          onClose={() => setEditingCell(null)}
+          employee={editingCell.employee}
+          date={editingCell.date}
+          currentStatus={editingCell.status}
+          isLocked={editingCell.isLocked}
+          issues={editingCell.issues}
+          onSave={handleModalSave}
+          isLoading={isSavingEdit}
+        />
+      )}
     </div>
   );
 }

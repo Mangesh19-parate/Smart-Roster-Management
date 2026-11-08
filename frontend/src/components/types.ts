@@ -9,6 +9,11 @@ export interface IssuesPanelProps {
   onClose: () => void;
   mobile?: boolean;
   month?: string;
+  isLoading?: boolean;
+  error?: any;
+  onRetry?: () => void;
+  isOpen?: boolean;
+  onToggleOpen?: () => void;
 }
 
 export interface SuggestionsDrawerProps {

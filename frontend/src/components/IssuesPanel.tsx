@@ -1,232 +1,284 @@
 /**
- * Issues Panel - Shows roster issues with filtering and navigation
+ * IssuesPanel - Redesigned "Scheduling Health" drawer
+ * Displays rule violations, structural warnings, and suggestion triggers with distinct state handling.
  */
 import { useState, useMemo } from 'react';
 import type { IssuesPanelProps } from './types';
-import { explainApi } from '../api/client';
-
-const SEVERITY_COLORS = {
-  ERROR: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', badge: 'bg-red-100 text-red-700' },
-  WARNING: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', badge: 'bg-amber-100 text-amber-700' },
-  INFO: { bg: 'bg-slate-50', text: 'text-slate-700', border: 'border-slate-200', badge: 'bg-slate-100 text-slate-700' },
-};
-
-const SEVERITY_ORDER = { ERROR: 0, WARNING: 1, INFO: 2 };
+import {
+  ShieldAlert,
+  AlertCircle,
+  X,
+  RefreshCw,
+  Sparkles,
+  ChevronRight,
+  CheckCircle2,
+} from 'lucide-react';
 
 export function IssuesPanel({
-  issues,
+  issues = [],
   selectedIssue,
   onIssueClick,
   onClose,
   mobile = false,
   month = '2026-12',
+  isLoading = false,
+  error = null,
+  onRetry,
 }: IssuesPanelProps) {
-  const [filter, setFilter] = useState<'all' | 'error' | 'warning' | 'structural'>('all');
-  const [groupByRule, setGroupByRule] = useState(true);
+  const [activeTab, setActiveTab] = useState<'all' | 'critical' | 'warning' | 'structural'>('all');
+  const [searchFilter, setSearchFilter] = useState('');
 
+  // Counts
+  const criticalCount = useMemo(() => issues.filter((i) => i.severity === 'ERROR').length, [issues]);
+  const warningCount = useMemo(() => issues.filter((i) => i.severity === 'WARNING').length, [issues]);
+  const structuralCount = useMemo(() => issues.filter((i) => i.structural || i.rule?.startsWith('Struct')).length, [issues]);
+
+  // Filtered issues
   const filteredIssues = useMemo(() => {
-    let result = [...issues];
-    if (filter === 'error') result = result.filter((i) => i.severity === 'ERROR');
-    if (filter === 'warning') result = result.filter((i) => i.severity === 'WARNING');
-    if (filter === 'structural') result = result.filter((i) => i.structural);
-    return result.sort((a, b) => SEVERITY_ORDER[a.severity as keyof typeof SEVERITY_ORDER] - SEVERITY_ORDER[b.severity as keyof typeof SEVERITY_ORDER]);
-  }, [issues, filter]);
+    let list = [...issues];
+    if (activeTab === 'critical') list = list.filter((i) => i.severity === 'ERROR');
+    else if (activeTab === 'warning') list = list.filter((i) => i.severity === 'WARNING');
+    else if (activeTab === 'structural') list = list.filter((i) => i.structural || i.rule?.startsWith('Struct'));
 
-  const groupedIssues = useMemo(() => {
-    if (!groupByRule) return { All: filteredIssues };
-    const groups: Record<string, any[]> = {};
-    filteredIssues.forEach((issue) => {
-      const key = issue.rule;
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(issue);
-    });
-    return groups;
-  }, [filteredIssues, groupByRule]);
+    if (searchFilter.trim()) {
+      const q = searchFilter.toLowerCase().trim();
+      list = list.filter(
+        (i) =>
+          (i.rule && i.rule.toLowerCase().includes(q)) ||
+          (i.message && i.message.toLowerCase().includes(q)) ||
+          (i.employee_name && i.employee_name.toLowerCase().includes(q)) ||
+          (i.process_name && i.process_name.toLowerCase().includes(q))
+      );
+    }
 
-  const errorCount = issues.filter((i) => i.severity === 'ERROR').length;
-  const warningCount = issues.filter((i) => i.severity === 'WARNING').length;
+    return list;
+  }, [issues, activeTab, searchFilter]);
 
-  const panelStyle = mobile
-    ? 'fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-lg max-h-[60vh]'
-    : 'w-80 md:w-96 bg-white border-l border-slate-200 flex flex-col h-full';
+  const panelContainer = mobile
+    ? 'fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-xl max-h-[70vh] flex flex-col'
+    : 'w-84 lg:w-96 bg-white border-l border-slate-200 flex flex-col h-full shrink-0 shadow-xs';
 
   return (
-    <aside className={panelStyle}>
-      {/* Header */}
-      <div className="p-3 border-b border-slate-200 flex items-center justify-between">
-        <h3 className="font-semibold text-slate-900">Issues</h3>
+    <aside className={panelContainer}>
+      {/* Drawer Header */}
+      <div className="p-3.5 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${SEVERITY_COLORS.ERROR.badge}`}>
-            {errorCount}
+          <ShieldAlert className="w-4 h-4 text-indigo-600" />
+          <h3 className="font-bold text-sm text-slate-900 tracking-tight">Scheduling Health</h3>
+          <span className="text-xs px-2 py-0.2 rounded-full font-semibold bg-slate-200 text-slate-700">
+            {issues.length}
           </span>
-          <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${SEVERITY_COLORS.WARNING.badge}`}>
-            {warningCount}
-          </span>
-          {!mobile && (
-            <button onClick={onClose} className="p-1 text-slate-400 hover:text-slate-600">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+        </div>
+        <div className="flex items-center gap-1">
+          {onRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              disabled={isLoading}
+              title="Refresh / Re-validate"
+              className="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-colors"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
             </button>
           )}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close scheduling health panel"
+            className="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="p-3 border-b border-slate-200 space-y-2">
-        <div className="flex gap-1" role="radiogroup">
-          {(['all', 'error', 'warning', 'structural'] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
-                filter === f
-                  ? 'bg-indigo-100 text-indigo-700'
-                  : 'text-slate-600 hover:bg-slate-100'
-              }`}
-              role="radio"
-              aria-checked={filter === f}
-            >
-              {f.charAt(0).toUpperCase() + f.slice(1)}
-            </button>
-          ))}
-        </div>
-        <label className="flex items-center gap-2 text-sm text-slate-600">
-          <input
-            type="checkbox"
-            checked={groupByRule}
-            onChange={(e) => setGroupByRule(e.target.checked)}
-            className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
-          />
-          Group by Rule
-        </label>
+      {/* Metric Breakdown Tabs */}
+      <div className="p-2 border-b border-slate-200 bg-white flex items-center gap-1 overflow-x-auto">
+        <button
+          type="button"
+          onClick={() => setActiveTab('all')}
+          className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors flex items-center gap-1.5 shrink-0 ${
+            activeTab === 'all' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <span>All</span>
+          <span className="text-[10px] px-1.5 py-0.2 bg-slate-200 text-slate-700 rounded-full">{issues.length}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('critical')}
+          className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors flex items-center gap-1.5 shrink-0 ${
+            activeTab === 'critical' ? 'bg-red-50 text-red-700 font-bold' : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <span>Critical</span>
+          <span className="text-[10px] px-1.5 py-0.2 bg-red-100 text-red-700 rounded-full">{criticalCount}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('warning')}
+          className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors flex items-center gap-1.5 shrink-0 ${
+            activeTab === 'warning' ? 'bg-amber-50 text-amber-800 font-bold' : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <span>Warnings</span>
+          <span className="text-[10px] px-1.5 py-0.2 bg-amber-100 text-amber-800 rounded-full">{warningCount}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('structural')}
+          className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors flex items-center gap-1.5 shrink-0 ${
+            activeTab === 'structural' ? 'bg-purple-50 text-purple-700 font-bold' : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <span>Structural</span>
+          <span className="text-[10px] px-1.5 py-0.2 bg-purple-100 text-purple-700 rounded-full">{structuralCount}</span>
+        </button>
       </div>
 
-      {/* Issues List */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-3">
-        {Object.entries(groupedIssues).length === 0 ? (
-          <div className="text-center py-8 text-slate-500 text-sm">
-            {filter === 'all' ? 'No issues found. 🎉' : `No ${filter} issues.`}
+      {/* Search within issues */}
+      <div className="px-3 py-2 border-b border-slate-200 bg-slate-50/50">
+        <input
+          type="text"
+          value={searchFilter}
+          onChange={(e) => setSearchFilter(e.target.value)}
+          placeholder="Filter issues by employee, rule, process..."
+          className="w-full px-2.5 py-1 text-xs bg-white border border-slate-300 rounded placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+        />
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
+        {/* Loading State */}
+        {isLoading && (
+          <div className="py-12 text-center space-y-2">
+            <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-xs font-medium text-slate-600">Validating scheduling constraints...</p>
           </div>
-        ) : (
-          Object.entries(groupedIssues).map(([rule, ruleIssues]) => (
-            <div key={rule} className="space-y-2">
-              <div className="px-1 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                {rule} ({ruleIssues.length})
-              </div>
-              {ruleIssues.map((issue) => (
-                <IssueRow
-                  key={issue.id}
-                  issue={issue}
-                  month={month}
-                  selected={selectedIssue?.id === issue.id}
-                  onClick={() => onIssueClick(issue)}
-                  colors={SEVERITY_COLORS[issue.severity as keyof typeof SEVERITY_COLORS]}
-                />
-              ))}
-            </div>
-          ))
         )}
+
+        {/* Error State with Retry Button */}
+        {!isLoading && error && (
+          <div className="p-4 rounded-lg bg-red-50 border border-red-200 text-center space-y-2">
+            <AlertCircle className="w-6 h-6 text-red-600 mx-auto" />
+            <p className="text-xs font-bold text-red-900">Health Check Failed</p>
+            <p className="text-xs text-red-700">{error.message || 'Unable to connect to validator engine.'}</p>
+            {onRetry && (
+              <button
+                type="button"
+                onClick={onRetry}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors shadow-xs"
+              >
+                <RefreshCw className="w-3 h-3" />
+                <span>Retry Health Check</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Empty State: All rules passed */}
+        {!isLoading && !error && issues.length === 0 && (
+          <div className="py-12 px-4 text-center space-y-2">
+            <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-6 h-6" />
+            </div>
+            <p className="text-xs font-bold text-slate-800">All Rules Satisfied</p>
+            <p className="text-xs text-slate-500 max-w-xs mx-auto">
+              No coverage shortfalls, rest-period conflicts, or structural violations detected for {month}.
+            </p>
+          </div>
+        )}
+
+        {/* Filtered Empty State */}
+        {!isLoading && !error && issues.length > 0 && filteredIssues.length === 0 && (
+          <div className="py-8 text-center text-xs text-slate-400">
+            No issues match the active filter criteria.
+          </div>
+        )}
+
+        {/* Issues List */}
+        {!isLoading &&
+          !error &&
+          filteredIssues.map((issue, idx) => {
+            const isError = issue.severity === 'ERROR';
+            const isSelected = selectedIssue && selectedIssue.id === issue.id;
+
+            return (
+              <div
+                key={issue.id || idx}
+                className={`p-3 rounded-lg border transition-all text-xs space-y-2 ${
+                  isSelected
+                    ? 'border-indigo-500 bg-indigo-50/40 shadow-xs'
+                    : isError
+                    ? 'border-red-200 bg-white hover:border-red-300'
+                    : 'border-amber-200 bg-white hover:border-amber-300'
+                }`}
+              >
+                {/* Header: Severity Badge + Rule */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                        isError ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'
+                      }`}
+                    >
+                      {issue.severity || 'WARNING'}
+                    </span>
+                    <span className="font-bold text-slate-800 truncate" title={issue.rule}>
+                      {issue.rule}
+                    </span>
+                  </div>
+
+                  {issue.date && (
+                    <span className="text-[10px] text-slate-500 shrink-0 font-medium">
+                      {issue.date}
+                    </span>
+                  )}
+                </div>
+
+                {/* Message / Description */}
+                <p className="text-slate-600 leading-relaxed font-normal">
+                  {issue.message || issue.description}
+                </p>
+
+                {/* Entity Tags */}
+                <div className="flex flex-wrap items-center gap-1 text-[10px] text-slate-500">
+                  {issue.employee_name && (
+                    <span className="px-1.5 py-0.2 bg-slate-100 rounded text-slate-700 font-medium">
+                      Emp: {issue.employee_name}
+                    </span>
+                  )}
+                  {issue.process_name && (
+                    <span className="px-1.5 py-0.2 bg-slate-100 rounded text-slate-700 font-medium">
+                      Proc: {issue.process_name}
+                    </span>
+                  )}
+                  {issue.brand_name && (
+                    <span className="px-1.5 py-0.2 bg-slate-100 rounded text-slate-700 font-medium">
+                      Brand: {issue.brand_name}
+                    </span>
+                  )}
+                </div>
+
+                {/* Action button to review suggestion */}
+                <div className="pt-1 flex items-center justify-end">
+                  <button
+                    type="button"
+                    onClick={() => onIssueClick(issue)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded transition-colors"
+                  >
+                    <Sparkles className="w-3 h-3 text-indigo-600" />
+                    <span>Review Suggestion</span>
+                    <ChevronRight className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
       </div>
     </aside>
-  );
-}
-
-function IssueRow({
-  issue,
-  month,
-  selected,
-  onClick,
-  colors,
-}: {
-  issue: any;
-  month: string;
-  selected: boolean;
-  onClick: () => void;
-  colors: { bg: string; text: string; border: string; badge: string };
-}) {
-  const [explanation, setExplanation] = useState<{ explanation: string; source: string } | null>(null);
-  const [loadingExplain, setLoadingExplain] = useState(false);
-
-  const handleExplain = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (explanation) {
-      setExplanation(null);
-      return;
-    }
-    setLoadingExplain(true);
-    try {
-      const res = await explainApi.explain(month, issue.id);
-      setExplanation(res);
-    } catch (err: any) {
-      setExplanation({ explanation: `Failed to load explanation: ${err.message}`, source: 'template' });
-    } finally {
-      setLoadingExplain(false);
-    }
-  };
-
-  const getLocation = () => {
-    const parts = [];
-    if (issue.brand_id) parts.push(`Brand: ${issue.brand_id.slice(0, 8)}`);
-    if (issue.process_id) parts.push(`Process: ${issue.process_id.slice(0, 8)}`);
-    if (issue.employee_id) parts.push(`Emp: ${issue.employee_id.slice(0, 8)}`);
-    if (issue.date) parts.push(issue.date);
-    return parts.join(' · ');
-  };
-
-  return (
-    <div
-      onClick={onClick}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
-      className={`w-full text-left p-2 rounded-md transition-colors cursor-pointer ${
-        selected
-          ? 'bg-indigo-50 ring-2 ring-indigo-500'
-          : 'hover:bg-slate-50'
-      } ${colors.bg} ${colors.border} border`}
-    >
-      <div className="flex items-start gap-2">
-        <span className={`px-1.5 py-0.5 text-[10px] font-medium rounded-full ${colors.badge} flex-shrink-0`}>
-          {issue.severity}
-        </span>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-1">
-            <div className="font-medium text-sm text-slate-900 truncate">{issue.message}</div>
-            <button
-              onClick={handleExplain}
-              disabled={loadingExplain}
-              className="px-1.5 py-0.5 text-[10px] font-medium rounded text-indigo-600 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 flex-shrink-0"
-            >
-              {loadingExplain ? '...' : explanation ? 'Hide' : 'Explain'}
-            </button>
-          </div>
-          <div className="text-xs text-slate-500 mt-0.5">{issue.cause}</div>
-          <div className="text-xs text-slate-400 mt-0.5">{getLocation()}</div>
-          {issue.suggestion_hint && (
-            <div className="text-xs text-indigo-600 mt-1 flex items-center gap-1">
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-              {issue.suggestion_hint}
-            </div>
-          )}
-
-          {explanation && (
-            <div className="mt-2 p-2 bg-white rounded border border-indigo-200 text-xs text-slate-700 space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="font-medium text-[10px] uppercase tracking-wider text-slate-500">Explanation</span>
-                <span className={`px-1.5 py-0.2 text-[9px] font-semibold rounded ${
-                  explanation.source === 'ai' ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-600'
-                }`}>
-                  {explanation.source === 'ai' ? 'AI-written' : 'Template'}
-                </span>
-              </div>
-              <p className="text-slate-800 leading-relaxed">{explanation.explanation}</p>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
   );
 }

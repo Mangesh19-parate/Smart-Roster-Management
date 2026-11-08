@@ -1,361 +1,324 @@
 /**
- * Top Bar - Month picker, roster status, actions
+ * TopBar - Compact Enterprise Application Header
+ * Month navigation, Roster Status, Quick Solve Actions, Export, and User Profile.
  */
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { format, parseISO, addMonths, subMonths } from 'date-fns';
-import { rosterApi } from '../api/client';
-
-type ViewMode = 'company' | 'pod' | 'brand' | 'process' | 'employee';
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  Calendar,
+  Play,
+  RefreshCw,
+  Download,
+  LogOut,
+  CheckCircle2,
+  Menu,
+} from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
 interface TopBarProps {
   month: string;
   onMonthChange: (month: string) => void;
-  view: ViewMode;
-  onViewChange: (view: ViewMode) => void;
-  viewId: string | null;
-  onViewIdChange: (id: string | null) => void;
   rosterStatus: string;
-  onGenerate: () => void;
-  onRegenerateMinimal: () => void;
-  onRegenerateFull: () => void;
-  onValidate: () => void;
-  generating: boolean;
-  validating: boolean;
-  serverWaking: boolean;
-  disabled: boolean;
-  userRole: string;
-  onOpenConfig: () => void;
-  onOpenStructuralReport: () => void;
-  onOpenFairnessReport: () => void;
-  onOpenLeaveDialog: () => void;
-  onOpenApprovals: () => void;
+  onGenerate?: () => void;
+  onRegenerateMinimal?: () => void;
+  onRegenerateFull?: () => void;
+  onExport?: (formatType: 'csv' | 'xlsx') => void;
+  onOpenApprovals?: () => void;
+  generating?: boolean;
+  serverWaking?: boolean;
+  disabled?: boolean;
+  userRole?: string;
+  onToggleSidebar?: () => void;
 }
 
-const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }> = {
-  DRAFT: { bg: 'bg-slate-100', text: 'text-slate-700', label: 'Draft' },
-  IN_REVIEW: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'In Review' },
-  PUBLISHED: { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Published' },
-};
-
-function getStatusConfig(status: string): { bg: string; text: string; label: string } {
-  return STATUS_COLORS[status] ?? STATUS_COLORS.DRAFT as { bg: string; text: string; label: string };
-}
-
-const VIEW_LABELS: Record<string, string> = {
-  company: 'Company',
-  pod: 'Pod',
-  brand: 'Brand',
-  process: 'Process',
-  employee: 'Employee',
+const STATUS_CONFIGS: Record<string, { bg: string; text: string; border: string; label: string }> = {
+  DRAFT: { bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-slate-300', label: 'Draft' },
+  IN_REVIEW: { bg: 'bg-amber-50', text: 'text-amber-800', border: 'border-amber-300', label: 'In Review' },
+  PUBLISHED: { bg: 'bg-emerald-50', text: 'text-emerald-800', border: 'border-emerald-300', label: 'Published' },
 };
 
 export function TopBar({
   month,
   onMonthChange,
-  view,
-  onViewChange,
-  viewId,
-  onViewIdChange,
-  rosterStatus,
+  rosterStatus = 'DRAFT',
   onGenerate,
   onRegenerateMinimal,
   onRegenerateFull,
-  onValidate,
-  generating,
-  validating,
-  serverWaking,
-  disabled,
-  userRole,
-  onOpenConfig,
-  onOpenStructuralReport,
-  onOpenFairnessReport,
-  onOpenLeaveDialog,
+  onExport,
   onOpenApprovals,
+  generating = false,
+  serverWaking = false,
+  disabled = false,
+  userRole = 'EMPLOYEE',
+  onToggleSidebar,
 }: TopBarProps) {
+  const { user, signOut } = useAuth();
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);
-  const [regenerateOpen, setRegenerateOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [regenOpen, setRegenOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
-  const [exporting, setExporting] = useState(false);
 
-  const handleExport = async (formatType: 'csv' | 'xlsx') => {
-    try {
-      setExporting(true);
-      const blob = await rosterApi.export(month, formatType, view, viewId || undefined);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `roster-${month}-${view}.${formatType}`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (err: any) {
-      alert(`Export failed: ${err.message}`);
-    } finally {
-      setExporting(false);
-      setExportOpen(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+  const monthPickerRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setProfileOpen(false);
+      }
+      if (monthPickerRef.current && !monthPickerRef.current.contains(event.target as Node)) {
+        setMonthPickerOpen(false);
+      }
     }
-  };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const currentDate = parseISO(`${month}-01`);
   const prevMonth = format(subMonths(currentDate, 1), 'yyyy-MM');
   const nextMonth = format(addMonths(currentDate, 1), 'yyyy-MM');
 
-  const statusConfig = getStatusConfig(rosterStatus);
-  const statusBg = statusConfig.bg;
-  const statusText = statusConfig.text;
-  const statusLabel = statusConfig.label;
-
+  const statusStyle = STATUS_CONFIGS[rosterStatus] ?? STATUS_CONFIGS.DRAFT!;
   const canManage = userRole === 'MANAGER';
+  const isPodLead = userRole === 'POD_LEAD';
 
   return (
-    <header className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-sm">
-      {/* Server Waking Banner */}
-      {serverWaking && (
-        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-sm text-amber-800 flex items-center justify-between">
-          <span>Waking up the server, this can take up to 50 seconds...</span>
-          <div className="flex items-center gap-2">
-            <div className="h-1.5 w-16 bg-amber-200 rounded-full overflow-hidden">
-              <div className="h-full bg-amber-500 animate-pulse" style={{ width: '60%' }} />
+    <header className="h-14 bg-white border-b border-slate-200 px-4 flex items-center justify-between shrink-0 z-20">
+      {/* Left: Mobile Sidebar Toggle + Month Switcher */}
+      <div className="flex items-center gap-3">
+        {onToggleSidebar && (
+          <button
+            type="button"
+            onClick={onToggleSidebar}
+            className="md:hidden p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-md"
+            aria-label="Toggle Navigation"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        )}
+
+        {/* Month Navigator */}
+        <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-0.5" ref={monthPickerRef}>
+          <button
+            type="button"
+            onClick={() => onMonthChange(prevMonth)}
+            className="p-1 rounded text-slate-500 hover:text-slate-800 hover:bg-white transition-colors"
+            title="Previous Month"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMonthPickerOpen(!monthPickerOpen)}
+            className="px-2 py-0.5 text-xs font-semibold text-slate-800 hover:bg-white rounded transition-colors flex items-center gap-1.5"
+          >
+            <Calendar className="w-3.5 h-3.5 text-slate-500" />
+            <span>{format(currentDate, 'MMMM yyyy')}</span>
+            <ChevronDown className="w-3 h-3 text-slate-400" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onMonthChange(nextMonth)}
+            className="p-1 rounded text-slate-500 hover:text-slate-800 hover:bg-white transition-colors"
+            title="Next Month"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+
+          {/* Month Picker Dropdown */}
+          {monthPickerOpen && (
+            <div className="absolute top-12 left-4 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg p-2.5 z-50 min-w-[200px]">
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                Select Month
+              </label>
+              <input
+                type="month"
+                value={month}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    onMonthChange(e.target.value);
+                    setMonthPickerOpen(false);
+                  }
+                }}
+                className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+              />
             </div>
-          </div>
+          )}
+        </div>
+
+        {/* Status Pill Badge */}
+        <span
+          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}
+        >
+          {statusStyle.label}
+        </span>
+      </div>
+
+      {/* Center: Server Waking Indicator */}
+      {serverWaking && (
+        <div className="hidden lg:flex items-center gap-2 px-3 py-1 bg-amber-50 border border-amber-200 rounded-full text-xs text-amber-800 animate-pulse">
+          <span className="w-2 h-2 rounded-full bg-amber-500" />
+          <span>Waking up engine, this may take up to 45 seconds...</span>
         </div>
       )}
 
-      <div className="px-4 md:px-6 py-3 flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
-        {/* Left: Logo & Month Picker */}
-        <div className="flex items-center gap-4 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="text-xl font-semibold text-slate-900">Smart Roster</span>
-            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${statusBg} ${statusText}`}>
-              {statusLabel}
-            </span>
-          </div>
+      {/* Right: Actions & User Profile */}
+      <div className="flex items-center gap-2">
+        {/* Approvals Review Shortcut */}
+        {(canManage || isPodLead) && onOpenApprovals && (
+          <button
+            type="button"
+            onClick={onOpenApprovals}
+            className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-md hover:bg-slate-50 transition-colors shadow-2xs"
+          >
+            <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />
+            <span>Approvals</span>
+          </button>
+        )}
 
-          <div className="relative">
+        {/* Regenerate Dropdown */}
+        {canManage && onRegenerateMinimal && onRegenerateFull && (
+          <div className="relative hidden sm:block">
             <button
-              onClick={() => setMonthPickerOpen(!monthPickerOpen)}
-              className="px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 flex items-center gap-1"
+              type="button"
+              disabled={disabled || generating}
+              onClick={() => setRegenOpen(!regenOpen)}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-md hover:bg-slate-50 transition-colors shadow-2xs disabled:opacity-50"
             >
-              {format(parseISO(`${month}-01`), 'MMMM yyyy')}
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
+              <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
+              <span>Regenerate</span>
+              <ChevronDown className="w-3 h-3 text-slate-400" />
             </button>
-
-            {monthPickerOpen && (
-              <div className="absolute left-0 mt-1 bg-white border border-slate-200 rounded-md shadow-md py-1 z-20 min-w-[160px]">
+            {regenOpen && (
+              <div className="absolute right-0 mt-1 w-52 bg-white border border-slate-200 rounded-md shadow-lg py-1 z-50">
                 <button
-                  onClick={() => { onMonthChange(prevMonth); setMonthPickerOpen(false); }}
-                  className="w-full px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                  type="button"
+                  onClick={() => {
+                    onRegenerateMinimal();
+                    setRegenOpen(false);
+                  }}
+                  className="w-full text-left px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                  {format(parseISO(`${prevMonth}-01`), 'MMM yyyy')}
+                  <div className="font-semibold text-slate-800">Minimal Change Preview</div>
+                  <div className="text-[10px] text-slate-400">Only shifts needed to fix gaps</div>
                 </button>
+                <div className="border-t border-slate-100 my-0.5" />
                 <button
-                  onClick={() => { onMonthChange(nextMonth); setMonthPickerOpen(false); }}
-                  className="w-full px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                  type="button"
+                  onClick={() => {
+                    onRegenerateFull();
+                    setRegenOpen(false);
+                  }}
+                  className="w-full text-left px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50"
                 >
-                  {format(parseISO(`${nextMonth}-01`), 'MMM yyyy')}
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
+                  <div className="font-semibold text-red-600">Full Solve</div>
+                  <div className="text-[10px] text-slate-400">Recomputes entire month</div>
                 </button>
-                <hr className="my-1 border-slate-200" />
-                <div className="px-2 py-1">
-                  <input
-                    type="month"
-                    value={month}
-                    onChange={(e) => { onMonthChange(e.target.value); setMonthPickerOpen(false); }}
-                    className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
               </div>
             )}
           </div>
-        </div>
+        )}
 
-        {/* Center: View Switcher (Desktop) */}
-        <div className="hidden md:flex items-center gap-1 bg-slate-100 rounded-md p-1">
-          {(Object.keys(VIEW_LABELS) as ViewMode[]).map((v) => (
-            <button
-              key={v}
-              onClick={() => { onViewChange(v); onViewIdChange(null); }}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                view === v
-                  ? 'bg-white text-indigo-600 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
-              }`}
-            >
-              {VIEW_LABELS[v]}
-            </button>
-          ))}
-        </div>
+        {/* Generate Primary Button */}
+        {canManage && onGenerate && (
+          <button
+            type="button"
+            disabled={disabled || generating}
+            onClick={onGenerate}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-md shadow-2xs disabled:opacity-50 transition-colors"
+          >
+            {generating ? (
+              <>
+                <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Solving...</span>
+              </>
+            ) : (
+              <>
+                <Play className="w-3.5 h-3.5 fill-current" />
+                <span>Generate</span>
+              </>
+            )}
+          </button>
+        )}
 
-        {/* Right: Actions */}
-        <div className="flex items-center gap-2 md:gap-3">
-          {/* View Filter Dropdown (for pod/brand/process/employee) */}
-          {(view !== 'company' && view !== 'employee') && (
-            <select
-              value={viewId || ''}
-              onChange={(e) => onViewIdChange(e.target.value || null)}
-              className="px-3 py-1.5 text-sm border border-slate-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 min-w-[180px]"
-            >
-              <option value="">All {VIEW_LABELS[view]}s</option>
-            </select>
-          )}
-
-          {/* Regenerate Dropdown */}
-          {!disabled && canManage && (
-            <div className="relative">
-              <button
-                onClick={() => setRegenerateOpen(!regenerateOpen)}
-                className="px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 flex items-center gap-1"
-                disabled={generating}
-              >
-                Regenerate
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-
-              {regenerateOpen && (
-                <div className="absolute right-0 mt-1 bg-white border border-slate-200 rounded-md shadow-md py-1 z-20 min-w-[180px]">
-                  <button
-                    onClick={() => { onRegenerateMinimal(); setRegenerateOpen(false); }}
-                    className="w-full px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                    disabled={generating}
-                  >
-                    <span className="font-medium">Minimal Change</span>
-                    <span className="text-xs text-slate-500 ml-auto">Preserves existing</span>
-                  </button>
-                  <button
-                    onClick={() => { onRegenerateFull(); setRegenerateOpen(false); }}
-                    className="w-full px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                    disabled={generating}
-                  >
-                    <span className="font-medium">Full Regenerate</span>
-                    <span className="text-xs text-slate-500 ml-auto">From scratch</span>
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          {!disabled && canManage && (
-            <>
-              <button
-                onClick={onGenerate}
-                disabled={generating}
-                className="px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 flex items-center gap-1"
-              >
-                {generating ? (
-                  <>
-                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                    Generating...
-                  </>
-                ) : (
-                  'Generate'
-                )}
-              </button>
-
-              <button
-                onClick={onValidate}
-                disabled={validating}
-                className="px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-              >
-                {validating ? 'Validating...' : 'Validate'}
-              </button>
-
-              <button
-                onClick={onOpenLeaveDialog}
-                className="px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 flex items-center gap-1"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                Add Leave
-              </button>
-
-              <button
-                onClick={onOpenStructuralReport}
-                className="px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 flex items-center gap-1"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                Structural Report
-              </button>
-
-              <button
-                onClick={onOpenFairnessReport}
-                className="px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 flex items-center gap-1"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" /></svg>
-                Fairness
-              </button>
-
-              <button
-                onClick={onOpenConfig}
-                className="px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 flex items-center gap-1"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                Config
-              </button>
-
-              <button
-                onClick={onOpenApprovals}
-                className="px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 flex items-center gap-1"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                Approvals
-              </button>
-            </>
-          )}
-
-          {/* Export Dropdown */}
+        {/* Export Button */}
+        {onExport && (
           <div className="relative">
             <button
+              type="button"
               onClick={() => setExportOpen(!exportOpen)}
-              disabled={exporting}
-              className="px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 flex items-center gap-1"
+              className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md border border-slate-200 transition-colors"
+              title="Export Roster"
             >
-              {exporting ? 'Exporting...' : 'Export'}
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+              <Download className="w-4 h-4" />
             </button>
             {exportOpen && (
-              <div className="absolute right-0 mt-1 bg-white border border-slate-200 rounded-md shadow-lg py-1 z-20 min-w-[140px]">
+              <div className="absolute right-0 mt-1 w-36 bg-white border border-slate-200 rounded-md shadow-lg py-1 z-50">
                 <button
-                  onClick={() => handleExport('csv')}
-                  className="w-full text-left px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                  type="button"
+                  onClick={() => {
+                    onExport('csv');
+                    setExportOpen(false);
+                  }}
+                  className="w-full text-left px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50"
                 >
                   Export CSV
                 </button>
                 <button
-                  onClick={() => handleExport('xlsx')}
-                  className="w-full text-left px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                  type="button"
+                  onClick={() => {
+                    onExport('xlsx');
+                    setExportOpen(false);
+                  }}
+                  className="w-full text-left px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50"
                 >
-                  Export Excel
+                  Export Excel (.xlsx)
                 </button>
               </div>
             )}
           </div>
-        </div>
-      </div>
+        )}
 
-      {/* Mobile View Switcher */}
-      <div className="md:hidden px-4 pb-3">
-        <select
-          value={view}
-          onChange={(e) => { onViewChange(e.target.value as ViewMode); onViewIdChange(null); }}
-          className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        >
-          {(Object.keys(VIEW_LABELS) as ViewMode[]).map((v) => (
-            <option key={v} value={v}>{VIEW_LABELS[v]}</option>
-          ))}
-        </select>
+        {/* User Profile Popover */}
+        <div className="relative ml-1" ref={profileRef}>
+          <button
+            type="button"
+            onClick={() => setProfileOpen(!profileOpen)}
+            className="flex items-center gap-2 p-1 rounded-full hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
+            aria-label="User Profile"
+          >
+            <div className="w-7 h-7 rounded-full bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center">
+              {user?.email?.charAt(0).toUpperCase() || 'U'}
+            </div>
+          </button>
+
+          {profileOpen && (
+            <div className="absolute right-0 mt-1.5 w-60 bg-white border border-slate-200 rounded-lg shadow-lg py-2 z-50">
+              <div className="px-3 py-2 border-b border-slate-100">
+                <p className="text-xs font-semibold text-slate-900 truncate">{user?.email || 'Authenticated User'}</p>
+                <span className="inline-block mt-1 px-2 py-0.5 text-[10px] font-bold rounded-full bg-indigo-50 text-indigo-700 uppercase">
+                  {userRole}
+                </span>
+              </div>
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={() => signOut()}
+                  className="w-full px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors text-left"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );
