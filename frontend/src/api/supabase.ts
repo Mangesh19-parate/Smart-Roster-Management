@@ -142,6 +142,10 @@ export async function signInDemo(role: keyof typeof DEMO_USERS) {
       email: demoUser.email,
       role: demoUser.role,
       user_metadata: { role: demoUser.role },
+      app_metadata: {
+        role: demoUser.role,
+        pod_id: demoUser.role === 'POD_LEAD' ? '33333333-3333-3333-3333-333333333333' : undefined,
+      },
     },
   };
   localStorage.setItem('demo-session', JSON.stringify(mockSession));
