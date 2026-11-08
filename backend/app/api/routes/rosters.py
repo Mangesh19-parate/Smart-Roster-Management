@@ -27,12 +27,14 @@ from app.api.schemas import (
     CoverResponse,
     DemandResponse,
     DiffEntry,
+    EmployeeSummary,
     EntryEditRequest,
     EntryEditResponse,
     FairnessRow,
     IssueResponse,
     LockRequest,
     LockResponse,
+    PodSummary,
     RegenerateMode,
     RosterDiff,
     RosterEntryResponse,
@@ -53,6 +55,7 @@ from app.db.models import (
     Roster,
     RosterEntry,
     RosterStatus,
+    UserRole,
 )
 from app.engine.types import CoverAssignment as EngineCoverAssignment
 from app.engine.types import RosterEntry as EngineRosterEntry
@@ -95,12 +98,32 @@ async def generate_roster(
     roster = persist_roster_result(db, month, result, problem, principal.user_id)
     db.commit()
 
+    # Load employee metadata
+    emp_ids = list({e.employee_id for e in roster.entries})
+    employees_db = db.query(Employee).filter(Employee.id.in_(emp_ids)).all() if emp_ids else []
+    pod_ids = list({e.pod_id for e in employees_db})
+    pods_db = (
+        {p.id: p.name for p in db.query(Pod).filter(Pod.id.in_(pod_ids)).all()} if pod_ids else {}
+    )
+
+    emp_meta_map = {
+        e.id: EmployeeSummary(
+            id=e.id,
+            name=e.name,
+            pod_id=e.pod_id,
+            pod=PodSummary(id=e.pod_id, name=pods_db.get(e.pod_id, "")),
+            role=e.role,
+        )
+        for e in employees_db
+    }
+
     # Convert entries to response
     entries = [
         RosterEntryResponse(
             id=e.id,
             roster_id=e.roster_id,
             employee_id=e.employee_id,
+            employee=emp_meta_map.get(e.employee_id),
             date=e.date,
             status=DayStatus(e.status.value),
             locked=e.locked,
@@ -206,6 +229,7 @@ async def generate_roster(
             updated_at=roster.updated_at,
             entries=entries,
             covers=covers,
+            employees=list(emp_meta_map.values()),
             demand=[],
             coverage=[],
             approvals=[],
@@ -347,8 +371,34 @@ async def get_roster(
     principal: Principal = Depends(get_current_principal),
 ) -> RosterResponse:
     """Fetch roster with entries, covers, demand, coverage, and issues."""
+    # Enforce role-based scoping: do not trust arbitrary view/id query parameters
+    effective_view = view
+    effective_id = id
+    if principal.role == UserRole.POD_LEAD:
+        if view == "pod" and id and id != principal.pod_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Forbidden: Pod Lead can only view assigned pod",
+            )
+        effective_view = "pod"
+        effective_id = principal.pod_id
+    elif principal.role == UserRole.EMPLOYEE:
+        if view == "employee" and id and id != principal.employee_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Forbidden: Employee can only view own roster",
+            )
+        effective_view = "employee"
+        effective_id = principal.employee_id
+
     data = get_roster_with_issues(
-        db, month, view, id, principal.role.value, principal.pod_id, principal.employee_id
+        db,
+        month,
+        effective_view,
+        effective_id,
+        principal.role.value,
+        principal.pod_id,
+        principal.employee_id,
     )
 
     if not data:
@@ -363,6 +413,25 @@ async def get_roster(
     demand = data["demand"]
     coverage = data["coverage"]
 
+    # Build employee metadata map
+    emp_ids = list({e.employee_id for e in entries})
+    employees_db = db.query(Employee).filter(Employee.id.in_(emp_ids)).all() if emp_ids else []
+    pod_ids = list({e.pod_id for e in employees_db})
+    pods_db = (
+        {p.id: p.name for p in db.query(Pod).filter(Pod.id.in_(pod_ids)).all()} if pod_ids else {}
+    )
+
+    emp_meta_map = {
+        e.id: EmployeeSummary(
+            id=e.id,
+            name=e.name,
+            pod_id=e.pod_id,
+            pod=PodSummary(id=e.pod_id, name=pods_db.get(e.pod_id, "")),
+            role=e.role,
+        )
+        for e in employees_db
+    }
+
     return RosterResponse(
         id=roster.id,
         month=roster.month,
@@ -376,6 +445,7 @@ async def get_roster(
                 id=e.id,
                 roster_id=e.roster_id,
                 employee_id=e.employee_id,
+                employee=emp_meta_map.get(e.employee_id),
                 date=e.date,
                 status=DayStatus(e.status.value),
                 locked=e.locked,
@@ -398,6 +468,7 @@ async def get_roster(
             )
             for c in covers
         ],
+        employees=list(emp_meta_map.values()),
         demand=[
             DemandResponse(
                 process_id=proc_id,
@@ -915,3 +986,60 @@ async def export_xlsx(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="roster-{month}.xlsx"'},
     )
+
+
+async def _compute_structural_issues(month: str, db: Session) -> list[IssueResponse]:
+    from app.engine.feasibility import (
+        AssignMissingRule,
+        StructHeadcountRule,
+        StructNoBackupRule,
+    )
+    from app.engine.validator import Validator
+    from app.services.engine_service import build_problem
+
+    problem = build_problem(db, month)
+    validator = Validator(
+        [
+            AssignMissingRule(),
+            StructHeadcountRule(),
+            StructNoBackupRule(),
+        ]
+    )
+    issues = validator.validate(problem, [], [])
+    return [
+        IssueResponse(
+            id=i.id,
+            rule=i.rule,
+            severity=i.severity,
+            structural=True,
+            brand_id=i.brand_id,
+            process_id=i.process_id,
+            employee_id=i.employee_id,
+            pod_id=i.pod_id,
+            date=i.date,
+            message=i.message,
+            cause=i.cause,
+            suggestion_hint=i.suggestion_hint,
+        )
+        for i in issues
+    ]
+
+
+@router.get("/structural", response_model=list[IssueResponse])
+async def get_structural_report(
+    month: str = Query(default="2026-12", pattern=r"^\d{4}-(0[1-9]|1[0-2])$"),
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(get_current_principal),
+) -> list[IssueResponse]:
+    """Fetch structural issues for the company (query param month)."""
+    return await _compute_structural_issues(month, db)
+
+
+@router.get("/rosters/{month}/structural", response_model=list[IssueResponse])
+async def get_roster_structural_report(
+    month: str,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(get_current_principal),
+) -> list[IssueResponse]:
+    """Fetch structural issues for the company (path param month)."""
+    return await _compute_structural_issues(month, db)

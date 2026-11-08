@@ -13,9 +13,11 @@ from app.api.deps import get_db, require_manager, require_pod_lead_or_manager
 from app.api.schemas import (
     AssignmentCreate,
     AssignmentResponse,
+    AssignmentUpdate,
     BrandCreate,
     BrandResponse,
     BrandUpdate,
+    CoverageOverrideDirectCreate,
     CoverageOverrideResponse,
     EmployeeCreate,
     EmployeeResponse,
@@ -713,6 +715,99 @@ async def set_overrides(
     ]
 
 
+@router.get("/coverage-overrides", response_model=list[CoverageOverrideResponse])
+async def list_coverage_overrides(
+    process_id: UUID | None = Query(default=None),
+    db: Session = Depends(get_db),
+    principal=Depends(require_pod_lead_or_manager),
+) -> list[CoverageOverrideResponse]:
+    """List coverage overrides."""
+    query = db.query(CoverageOverride)
+    if process_id:
+        query = query.filter(CoverageOverride.process_id == process_id)
+    overrides = query.all()
+    return [
+        CoverageOverrideResponse(
+            id=o.id,
+            process_id=o.process_id,
+            weekday=o.weekday,
+            date=o.date,
+            min_coverage=o.min_coverage,
+            created_at=o.created_at,
+            updated_at=o.updated_at,
+        )
+        for o in overrides
+    ]
+
+
+@router.post(
+    "/coverage-overrides",
+    response_model=CoverageOverrideResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_coverage_override(
+    request: CoverageOverrideDirectCreate,
+    db: Session = Depends(get_db),
+    principal=Depends(require_manager),
+) -> CoverageOverrideResponse:
+    """Create a single coverage override (Manager only)."""
+    process = db.query(Process).filter(Process.id == request.process_id).first()
+    if not process:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Process not found")
+
+    if request.weekday is None and request.override_date is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Exactly one of weekday or date must be provided",
+        )
+    if request.weekday is not None and request.override_date is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Exactly one of weekday or date must be provided",
+        )
+
+    override = CoverageOverride(
+        process_id=request.process_id,
+        weekday=request.weekday,
+        date=request.override_date,
+        min_coverage=request.min_coverage,
+    )
+    db.add(override)
+    db.flush()
+
+    return CoverageOverrideResponse(
+        id=override.id,
+        process_id=override.process_id,
+        weekday=override.weekday,
+        date=override.date,
+        min_coverage=override.min_coverage,
+        created_at=override.created_at,
+        updated_at=override.updated_at,
+    )
+
+
+@router.delete(
+    "/coverage-overrides/{override_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+    response_model=None,
+)
+async def delete_coverage_override(
+    override_id: UUID,
+    db: Session = Depends(get_db),
+    principal=Depends(require_manager),
+) -> None:
+    """Delete a coverage override (Manager only)."""
+    override = db.query(CoverageOverride).filter(CoverageOverride.id == override_id).first()
+    if not override:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Coverage override not found",
+        )
+    db.delete(override)
+    db.flush()
+
+
 # ============================================================================
 # Assignments
 # ============================================================================
@@ -788,6 +883,68 @@ async def create_assignment(
         type=request.type,
     )
     db.add(assignment)
+    db.flush()
+
+    return AssignmentResponse(
+        id=assignment.id,
+        employee_id=assignment.employee_id,
+        process_id=assignment.process_id,
+        type=assignment.type,
+        created_at=assignment.created_at,
+        updated_at=assignment.updated_at,
+    )
+
+
+@router.put("/assignments/{assignment_id}", response_model=AssignmentResponse)
+@router.patch("/assignments/{assignment_id}", response_model=AssignmentResponse)
+async def update_assignment(
+    assignment_id: UUID,
+    request: AssignmentUpdate,
+    db: Session = Depends(get_db),
+    principal=Depends(require_manager),
+) -> AssignmentResponse:
+    """Update an assignment (Manager only)."""
+    assignment = db.query(Assignment).filter(Assignment.id == assignment_id).first()
+    if not assignment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assignment not found",
+        )
+
+    new_emp_id = request.employee_id or assignment.employee_id
+    new_proc_id = request.process_id or assignment.process_id
+
+    if request.employee_id is not None:
+        employee = db.query(Employee).filter(Employee.id == request.employee_id).first()
+        if not employee:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found")
+        assignment.employee_id = request.employee_id
+
+    if request.process_id is not None:
+        process = db.query(Process).filter(Process.id == request.process_id).first()
+        if not process:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Process not found")
+        assignment.process_id = request.process_id
+
+    if request.type is not None:
+        assignment.type = request.type
+
+    # Check for duplicate if employee or process changed
+    existing = (
+        db.query(Assignment)
+        .filter(
+            Assignment.employee_id == new_emp_id,
+            Assignment.process_id == new_proc_id,
+            Assignment.id != assignment_id,
+        )
+        .first()
+    )
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Assignment conflict: employee already assigned to this process",
+        )
+
     db.flush()
 
     return AssignmentResponse(

@@ -334,6 +334,22 @@ class AssignmentCreate(AssignmentBase):
     pass
 
 
+class AssignmentUpdate(BaseModel):
+    employee_id: UUID | None = None
+    process_id: UUID | None = None
+    type: AssignmentType | None = None
+
+
+class CoverageOverrideDirectCreate(BaseModel):
+    process_id: UUID
+    weekday: int | None = Field(default=None, ge=0, le=6)
+    override_date: Optional[date] = Field(default=None, alias="date")
+    min_coverage: int = Field(default=1, ge=0)
+
+    class Config:
+        populate_by_name = True
+
+
 class AssignmentResponse(AssignmentBase):
     id: UUID
     created_at: datetime
@@ -491,9 +507,23 @@ class RosterEntryBase(BaseModel):
     source: EntrySource = EntrySource.GENERATED
 
 
+class PodSummary(BaseModel):
+    id: UUID
+    name: str
+
+
+class EmployeeSummary(BaseModel):
+    id: UUID
+    name: str
+    pod_id: UUID
+    pod: PodSummary | None = None
+    role: EmployeeRole | str = EmployeeRole.AGENT
+
+
 class RosterEntryResponse(RosterEntryBase):
     id: UUID
     roster_id: UUID
+    employee: EmployeeSummary | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -560,6 +590,7 @@ class RosterResponse(BaseModel):
 
     entries: list[RosterEntryResponse] = Field(default_factory=list)
     covers: list[CoverAssignmentResponse] = Field(default_factory=list)
+    employees: list[EmployeeSummary] = Field(default_factory=list)
     demand: list[DemandResponse] = Field(default_factory=list)
     coverage: list[CoverageResponse] = Field(default_factory=list)
     approvals: list[ApprovalResponse] = Field(default_factory=list)

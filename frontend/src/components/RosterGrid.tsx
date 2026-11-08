@@ -35,12 +35,29 @@ export function RosterGrid({
   // Group entries by employee
   const employees = useMemo(() => {
     const empMap = new Map<string, any>();
+
+    // Seed from rosterData.employees if present
+    if (Array.isArray(rosterData.employees)) {
+      rosterData.employees.forEach((emp: any) => {
+        empMap.set(emp.id, {
+          id: emp.id,
+          name: emp.name || 'Unknown',
+          pod: emp.pod?.name || '',
+          pod_id: emp.pod_id || emp.pod?.id || '',
+          role: emp.role || 'AGENT',
+          entries: new Map<string, any>(),
+          covers: new Map<string, any>(),
+        });
+      });
+    }
+
     rosterData.entries.forEach((entry: any) => {
       if (!empMap.has(entry.employee_id)) {
         empMap.set(entry.employee_id, {
           id: entry.employee_id,
           name: entry.employee?.name || 'Unknown',
           pod: entry.employee?.pod?.name || '',
+          pod_id: entry.employee?.pod_id || entry.employee?.pod?.id || '',
           role: entry.employee?.role || 'AGENT',
           entries: new Map<string, any>(),
           covers: new Map<string, any>(),
@@ -61,26 +78,19 @@ export function RosterGrid({
     });
 
     return Array.from(empMap.values()).sort((a, b) => a.name.localeCompare(b.name));
-  }, [rosterData.entries, rosterData.covers]);
+  }, [rosterData.entries, rosterData.covers, rosterData.employees]);
 
   // Filter employees based on view
   const filteredEmployees = useMemo(() => {
     if (view === 'company') return employees;
     if (view === 'pod' && viewId) {
-      return employees.filter((e) => e.pod === viewId);
+      return employees.filter((e) => e.pod_id === viewId || e.pod === viewId);
     }
     if (view === 'brand' && viewId) {
-      // Filter by brand - need to check assignments
-      return employees.filter((_e) => {
-        // This would need assignment data
-        return true;
-      });
+      return employees;
     }
     if (view === 'process' && viewId) {
-      return employees.filter((_e) => {
-        // This would need assignment data
-        return true;
-      });
+      return employees;
     }
     if (view === 'employee' && viewId) {
       return employees.filter((e) => e.id === viewId);
@@ -100,7 +110,7 @@ export function RosterGrid({
       return entry.status;
     }
     // Check if closed day
-    const demand = rosterData.demand.find((d: any) => d.date === date);
+    const demand = rosterData.demand?.find((d: any) => d.date === date);
     if (demand && demand.required === 0) return 'CLOSED';
     return null;
   }, [rosterData.demand]);

@@ -5,7 +5,7 @@
 
 import { QueryClient } from '@tanstack/react-query';
 
-const API_BASE = '/api/v1';
+const API_BASE = (import.meta as any).env?.VITE_API_URL || '/api/v1';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,8 +38,20 @@ async function fetchWithAuth<T>(path: string, options: RequestInit = {}): Promis
   }
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: { message: response.statusText } }));
-    throw new Error(error.error?.message || response.statusText);
+    const errorBody = await response.json().catch(() => null);
+    let msg = response.statusText;
+    if (errorBody) {
+      if (typeof errorBody.detail === 'string') {
+        msg = errorBody.detail;
+      } else if (Array.isArray(errorBody.detail)) {
+        msg = errorBody.detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ');
+      } else if (errorBody.error?.message) {
+        msg = errorBody.error.message;
+      } else if (errorBody.message) {
+        msg = errorBody.message;
+      }
+    }
+    throw new Error(msg);
   }
 
   if (response.status === 204) {
@@ -93,7 +105,15 @@ export const configApi = {
     return fetchWithAuth<any[]>(`/assignments${search ? `?${search}` : ''}`);
   },
   createAssignment: (data: any) => fetchWithAuth<any>('/assignments', { method: 'POST', body: JSON.stringify(data) }),
+  updateAssignment: (id: string, data: any) => fetchWithAuth<any>(`/assignments/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteAssignment: (id: string) => fetchWithAuth<void>(`/assignments/${id}`, { method: 'DELETE' }),
+
+  listOverrides: (processId?: string) => {
+    const search = processId ? `?process_id=${processId}` : '';
+    return fetchWithAuth<any[]>(`/coverage-overrides${search}`);
+  },
+  createOverride: (data: any) => fetchWithAuth<any>('/coverage-overrides', { method: 'POST', body: JSON.stringify(data) }),
+  deleteOverride: (id: string) => fetchWithAuth<void>(`/coverage-overrides/${id}`, { method: 'DELETE' }),
 
   listHolidays: () => fetchWithAuth<any[]>('/holidays'),
   createHoliday: (data: any) => fetchWithAuth<any>('/holidays', { method: 'POST', body: JSON.stringify(data) }),

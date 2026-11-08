@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     )
     supabase_jwt_secret: str | None = Field(default=None, validation_alias="SUPABASE_JWT_SECRET")
     cors_origins: str = Field(default="http://localhost:5173", validation_alias="CORS_ORIGINS")
-    demo_mode: bool = Field(default=True, validation_alias="DEMO_MODE")
+    demo_mode: bool = Field(default=False, validation_alias="DEMO_MODE")
     demo_reset_token: str | None = Field(default=None, validation_alias="DEMO_RESET_TOKEN")
     solver_time_limit_s: int = Field(default=15, validation_alias="SOLVER_TIME_LIMIT_S")
     solver_seed: int = Field(default=1, validation_alias="SOLVER_SEED")

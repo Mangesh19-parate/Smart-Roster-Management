@@ -344,3 +344,60 @@ def test_solver_impossible_coverage_returns_gaps() -> None:
     # Should find feasible solution with shortfall
     assert result.status in ("OPTIMAL", "FEASIBLE")
     assert result.gaps_total > 0  # Should have gaps
+
+
+def test_locked_entries_preserve_status_and_lock_flag() -> None:
+    """Test that locked entries preserve their actual status (e.g. WO) and lock flag."""
+    problem = make_simple_problem()
+    emp_id = problem.employees[0].id
+    locked_date = date(2026, 12, 10)
+
+    prev_entries = [
+        RosterEntry(
+            employee_id=emp_id,
+            date=locked_date,
+            status=DayStatus.WO,
+            locked=True,
+            source=EntrySource.MANUAL,
+        )
+    ]
+
+    result = solve_roster_with_previous(problem, prev_entries, [])
+    assert result.status in ("OPTIMAL", "FEASIBLE")
+
+    entry_on_locked_date = next(e for e in result.entries if e.date == locked_date)
+    assert entry_on_locked_date.status == DayStatus.WO
+    assert entry_on_locked_date.locked is True
+
+
+def test_shortfall_when_zero_eligible_employees() -> None:
+    """When a process has required coverage but zero eligible suppliers, shortfall equals requirement."""
+    proc_id = uuid4()
+    brand_id = uuid4()
+
+    process = Process(
+        id=proc_id,
+        brand_id=brand_id,
+        name="Unstaffed CS",
+        calendar_mode=CalendarMode.ALL_365,
+        min_coverage=2,
+    )
+
+    problem = Problem(
+        month_start=date(2026, 12, 1),
+        month_end=date(2026, 12, 5),  # 5 days
+        employees=[],
+        pods=[],
+        brands=[],
+        processes=[process],
+        coverage_overrides=[],
+        assignments=[],  # zero eligible employees
+        holidays=[],
+        leaves=[],
+        settings={"weekly_rest_days": 1, "max_consecutive_days": 6},
+    )
+
+    result = solve_roster(problem)
+    assert result.status in ("OPTIMAL", "FEASIBLE")
+    # 5 days * 2 required = 10 gaps
+    assert result.gaps_total == 10

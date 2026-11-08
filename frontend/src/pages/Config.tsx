@@ -43,6 +43,7 @@ export function Config({ onClose }: ConfigProps) {
   const deleteProcess = useMutation({ mutationFn: ({ id, confirm }: { id: string; confirm: boolean }) => configApi.deleteProcess(id, confirm), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['processes'] }) });
 
   const createAssignment = useMutation({ mutationFn: configApi.createAssignment, onSuccess: () => queryClient.invalidateQueries({ queryKey: ['assignments'] }) });
+  const updateAssignment = useMutation({ mutationFn: ({ id, data }: { id: string; data: any }) => configApi.updateAssignment(id, data), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['assignments'] }) });
   const deleteAssignment = useMutation({ mutationFn: (id: string) => configApi.deleteAssignment(id), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['assignments'] }) });
 
   const createHoliday = useMutation({ mutationFn: configApi.createHoliday, onSuccess: () => queryClient.invalidateQueries({ queryKey: ['holidays'] }) });
@@ -72,7 +73,7 @@ export function Config({ onClose }: ConfigProps) {
       pods: editingItem ? updatePod : createPod,
       brands: editingItem ? updateBrand : createBrand,
       processes: editingItem ? updateProcess : createProcess,
-      assignments: createAssignment,
+      assignments: editingItem ? updateAssignment : createAssignment,
       holidays: createHoliday,
     };
     const mutation = mutationMap[activeTab];
@@ -253,7 +254,7 @@ export function Config({ onClose }: ConfigProps) {
           { key: 'type', header: 'Type' },
         ]}
         data={assignments || []}
-        onEdit={() => {}}
+        onEdit={handleEdit}
         onDelete={handleDelete}
         formFields={[
           { name: 'employee_id', label: 'Employee', type: 'select', options: employees?.map((e: any) => ({ value: e.id, label: e.name })) || [], required: true },

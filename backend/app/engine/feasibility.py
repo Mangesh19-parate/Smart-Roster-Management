@@ -188,9 +188,6 @@ class StructHeadcountRule(Rule):
             ]
             all_eligible = set(primary_emps) | set(backup_emps)
 
-            if not all_eligible:
-                continue
-
             # Check each day in month
             from app.engine.calendar import get_min_coverage, is_closed
 

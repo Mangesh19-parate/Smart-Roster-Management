@@ -128,11 +128,8 @@ export async function signInDemo(role: keyof typeof DEMO_USERS) {
   );
 
   if (isLive) {
-    try {
-      return await signIn(demoUser.email, demoUser.password);
-    } catch {
-      // Fall through to local demo session if live login fails
-    }
+    // Production must never silently fall back to local demo authentication
+    return await signIn(demoUser.email, demoUser.password);
   }
 
   const mockSession = {

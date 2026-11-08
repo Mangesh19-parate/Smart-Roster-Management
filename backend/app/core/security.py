@@ -192,25 +192,48 @@ async def get_current_principal(
 
     token = authorization[7:]
 
-    # ponytail: demo mode bypass for local development without live auth provider
+    # Demo mode handling for local development without live auth provider
     settings = get_settings()
-    if settings.demo_mode and token.startswith("demo-token-"):
+    if token.startswith("demo-token-"):
+        if not settings.demo_mode:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Demo authentication is not enabled",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
         role_map = {
             "demo-token-manager": UserRole.MANAGER,
             "demo-token-pod_lead": UserRole.POD_LEAD,
             "demo-token-employee": UserRole.EMPLOYEE,
         }
-        role = role_map.get(token, UserRole.MANAGER)
+        if token not in role_map:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid demo token",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        role = role_map[token]
+        user_ids = {
+            UserRole.MANAGER: UUID("11111111-1111-1111-1111-111111111111"),
+            UserRole.POD_LEAD: UUID("22222222-2222-2222-2222-222222222222"),
+            UserRole.EMPLOYEE: UUID("33333333-3333-3333-3333-333333333333"),
+        }
+        emp_ids = {
+            UserRole.MANAGER: None,
+            UserRole.POD_LEAD: UUID("22222222-2222-2222-2222-222222222222"),
+            UserRole.EMPLOYEE: UUID("33333333-3333-3333-3333-333333333333"),
+        }
+        pod_ids = {
+            UserRole.MANAGER: None,
+            UserRole.POD_LEAD: UUID("44444444-4444-4444-4444-444444444444"),
+            UserRole.EMPLOYEE: UUID("44444444-4444-4444-4444-444444444444"),
+        }
         return Principal(
-            user_id=UUID("11111111-1111-1111-1111-111111111111"),
+            user_id=user_ids[role],
             email=f"{role.value.lower()}@demo.local",
             role=role,
-            employee_id=None
-            if role == UserRole.MANAGER
-            else UUID("22222222-2222-2222-2222-222222222222"),
-            pod_id=None
-            if role == UserRole.MANAGER
-            else UUID("33333333-3333-3333-3333-333333333333"),
+            employee_id=emp_ids[role],
+            pod_id=pod_ids[role],
         )  # Remove "Bearer "
 
     try:
@@ -263,25 +286,48 @@ async def get_current_principal_dep(
 
     token = authorization[7:]
 
-    # ponytail: demo mode bypass for local development without live auth provider
+    # Demo mode handling for local development without live auth provider
     settings = get_settings()
-    if settings.demo_mode and token.startswith("demo-token-"):
+    if token.startswith("demo-token-"):
+        if not settings.demo_mode:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Demo authentication is not enabled",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
         role_map = {
             "demo-token-manager": UserRole.MANAGER,
             "demo-token-pod_lead": UserRole.POD_LEAD,
             "demo-token-employee": UserRole.EMPLOYEE,
         }
-        role = role_map.get(token, UserRole.MANAGER)
+        if token not in role_map:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid demo token",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        role = role_map[token]
+        user_ids = {
+            UserRole.MANAGER: UUID("11111111-1111-1111-1111-111111111111"),
+            UserRole.POD_LEAD: UUID("22222222-2222-2222-2222-222222222222"),
+            UserRole.EMPLOYEE: UUID("33333333-3333-3333-3333-333333333333"),
+        }
+        emp_ids = {
+            UserRole.MANAGER: None,
+            UserRole.POD_LEAD: UUID("22222222-2222-2222-2222-222222222222"),
+            UserRole.EMPLOYEE: UUID("33333333-3333-3333-3333-333333333333"),
+        }
+        pod_ids = {
+            UserRole.MANAGER: None,
+            UserRole.POD_LEAD: UUID("44444444-4444-4444-4444-444444444444"),
+            UserRole.EMPLOYEE: UUID("44444444-4444-4444-4444-444444444444"),
+        }
         return Principal(
-            user_id=UUID("11111111-1111-1111-1111-111111111111"),
+            user_id=user_ids[role],
             email=f"{role.value.lower()}@demo.local",
             role=role,
-            employee_id=None
-            if role == UserRole.MANAGER
-            else UUID("22222222-2222-2222-2222-222222222222"),
-            pod_id=None
-            if role == UserRole.MANAGER
-            else UUID("33333333-3333-3333-3333-333333333333"),
+            employee_id=emp_ids[role],
+            pod_id=pod_ids[role],
         )
 
     try:

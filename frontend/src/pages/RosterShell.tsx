@@ -365,7 +365,14 @@ export function RosterShell() {
         <LeaveDialog
           month={month}
           onClose={() => setShowLeaveDialog(false)}
-          employees={rosterData?.entries?.map((e: any) => e.employee).filter((e: any, i: number, arr: any[]) => arr.findIndex(x => x.id === e.id) === i) || []}
+          employees={
+            rosterData?.employees ||
+            rosterData?.entries
+              ?.map((e: any) => e.employee)
+              .filter(Boolean)
+              .filter((e: any, i: number, arr: any[]) => arr.findIndex((x) => x?.id === e?.id) === i) ||
+            []
+          }
         />
       )}
 

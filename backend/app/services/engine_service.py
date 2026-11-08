@@ -43,6 +43,11 @@ from app.db.models import (
 from app.db.models import (
     RosterEntry as DBRosterEntry,
 )
+from app.engine.feasibility import (
+    AssignMissingRule,
+    StructHeadcountRule,
+    StructNoBackupRule,
+)
 from app.engine.rules.coverage import CovBelowMinRule, CovZeroRule
 from app.engine.rules.employee import (
     CapacityExceededRule,
@@ -154,13 +159,25 @@ def build_problem(
     _ = db.query(Pod).filter(Pod.id.in_(pod_ids)).all()  # Not used in engine directly
 
     # Get brands and processes
-    # First get process IDs from assignments of these employees
-    proc_ids = (
-        db.query(Assignment.process_id).filter(Assignment.employee_id.in_(emp_ids)).distinct().all()
-    )
-    proc_ids = [p[0] for p in proc_ids]
-
-    processes = db.query(Process).filter(Process.id.in_(proc_ids)).all() if proc_ids else []
+    if view == "brand" and view_id:
+        processes = db.query(Process).filter(Process.brand_id == view_id).all()
+    elif view == "process" and view_id:
+        processes = db.query(Process).filter(Process.id == view_id).all()
+    elif not view or view == "company" or (principal_role == "MANAGER" and not view):
+        processes = (
+            db.query(Process).join(Brand, Process.brand_id == Brand.id).filter(Brand.active).all()
+        )
+    else:
+        proc_ids = (
+            db.query(Assignment.process_id)
+            .filter(Assignment.employee_id.in_(emp_ids))
+            .distinct()
+            .all()
+        )
+        proc_ids_list = [p[0] for p in proc_ids]
+        processes = (
+            db.query(Process).filter(Process.id.in_(proc_ids_list)).all() if proc_ids_list else []
+        )
     brand_ids = list(set(p.brand_id for p in processes))
     brands = db.query(Brand).filter(Brand.id.in_(brand_ids)).all()
 
@@ -192,6 +209,7 @@ def build_problem(
     ]
 
     # Coverage overrides
+    proc_ids = [p.id for p in processes]
     override_query = (
         db.query(CoverageOverride).filter(CoverageOverride.process_id.in_(proc_ids))
         if proc_ids
@@ -406,6 +424,9 @@ def validate_roster_entries(
     # Build full validator with all rules
     validator = Validator(
         [
+            AssignMissingRule(),
+            StructHeadcountRule(),
+            StructNoBackupRule(),
             CovZeroRule(),
             CovBelowMinRule(),
             WOMissingRule(),
@@ -924,6 +945,11 @@ def get_impact_preview(
     # The validator uses problem.leaves to determine blocked days
     # Let's create a new validator run with the updated problem
 
+    from app.engine.feasibility import (
+        AssignMissingRule,
+        StructHeadcountRule,
+        StructNoBackupRule,
+    )
     from app.engine.rules.coverage import CovBelowMinRule, CovZeroRule
     from app.engine.rules.employee import (
         CapacityExceededRule,
@@ -936,6 +962,9 @@ def get_impact_preview(
 
     validator = Validator(
         [
+            AssignMissingRule(),
+            StructHeadcountRule(),
+            StructNoBackupRule(),
             CovZeroRule(),
             CovBelowMinRule(),
             WOMissingRule(),
@@ -1119,7 +1148,8 @@ def apply_suggestion(
 
     # Apply actions
     for action in suggestion.get("actions", []):
-        if action["type"] == "ADD_COVER":
+        atype = action.get("type")
+        if atype == "ADD_COVER":
             cover = DBCoverAssignment(
                 roster_id=roster.id,
                 employee_id=UUID(action["employee_id"]),
@@ -1128,6 +1158,64 @@ def apply_suggestion(
                 source=EntrySource.SUGGESTION,
             )
             db.add(cover)
+        elif atype == "SHIFT_OFF":
+            emp_id = UUID(action["employee_id"])
+            from_d = date.fromisoformat(action["from_date"])
+            to_d = date.fromisoformat(action["to_date"])
+            e1 = (
+                db.query(DBRosterEntry)
+                .filter(
+                    DBRosterEntry.roster_id == roster.id,
+                    DBRosterEntry.employee_id == emp_id,
+                    DBRosterEntry.date == from_d,
+                )
+                .first()
+            )
+            e2 = (
+                db.query(DBRosterEntry)
+                .filter(
+                    DBRosterEntry.roster_id == roster.id,
+                    DBRosterEntry.employee_id == emp_id,
+                    DBRosterEntry.date == to_d,
+                )
+                .first()
+            )
+            if e1:
+                e1.status = DayStatus.WORK
+                e1.source = EntrySource.SUGGESTION
+            if e2:
+                e2.status = DayStatus.WO
+                e2.source = EntrySource.SUGGESTION
+        elif atype == "SWAP_OFF":
+            emp1 = UUID(action["employee_1_id"])
+            emp2 = UUID(action["employee_2_id"])
+            d1 = date.fromisoformat(action["date_1"])
+            d2 = date.fromisoformat(action["date_2"])
+            for eid, old_off, new_off in [(emp1, d1, d2), (emp2, d2, d1)]:
+                e_old = (
+                    db.query(DBRosterEntry)
+                    .filter(
+                        DBRosterEntry.roster_id == roster.id,
+                        DBRosterEntry.employee_id == eid,
+                        DBRosterEntry.date == old_off,
+                    )
+                    .first()
+                )
+                e_new = (
+                    db.query(DBRosterEntry)
+                    .filter(
+                        DBRosterEntry.roster_id == roster.id,
+                        DBRosterEntry.employee_id == eid,
+                        DBRosterEntry.date == new_off,
+                    )
+                    .first()
+                )
+                if e_old:
+                    e_old.status = DayStatus.WORK
+                    e_old.source = EntrySource.SUGGESTION
+                if e_new:
+                    e_new.status = DayStatus.WO
+                    e_new.source = EntrySource.SUGGESTION
 
     db.flush()
 

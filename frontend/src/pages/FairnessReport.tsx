@@ -156,3 +156,4 @@ export function FairnessReport({ month, onClose }: FairnessReportProps) {
     </div>
   );
 }
+

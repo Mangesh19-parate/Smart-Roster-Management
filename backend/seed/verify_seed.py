@@ -249,23 +249,22 @@ def check_case_6_holidays(db: Session) -> bool:
 
 def check_case_7_overlapping_primary(db: Session) -> bool:
     """Planted case 7: Overlapping PRIMARY assignments (two people on one process)."""
-    zenith = db.execute(select(Brand).where(Brand.name == "ZENITH")).scalar_one_or_none()
-    if not zenith:
-        print("  ❌ ZENITH brand not found")
+    unity = db.execute(select(Brand).where(Brand.name == "UNITY")).scalar_one_or_none()
+    if not unity:
+        print("  ❌ UNITY brand not found")
         return False
 
-    zenith_processes = (
-        db.execute(select(Process).where(Process.brand_id == zenith.id)).scalars().all()
-    )
-    if not zenith_processes:
-        print("  ❌ ZENITH has no processes")
+    cs_process = db.execute(
+        select(Process).where(Process.brand_id == unity.id, Process.name == "CS")
+    ).scalar_one_or_none()
+    if not cs_process:
+        print("  ❌ UNITY has no CS process")
         return False
 
-    proc = zenith_processes[0]
     primary_assignments = (
         db.execute(
             select(Assignment).where(
-                Assignment.process_id == proc.id, Assignment.type == AssignmentType.PRIMARY
+                Assignment.process_id == cs_process.id, Assignment.type == AssignmentType.PRIMARY
             )
         )
         .scalars()
@@ -273,10 +272,10 @@ def check_case_7_overlapping_primary(db: Session) -> bool:
     )
 
     if len(primary_assignments) != 2:
-        print(f"  ❌ ZENITH has {len(primary_assignments)} PRIMARY assignments, expected 2")
+        print(f"  ❌ UNITY CS has {len(primary_assignments)} PRIMARY assignments, expected 2")
         return False
 
-    print("  ✅ ZENITH: 2 PRIMARY assignments (overlapping)")
+    print("  ✅ UNITY CS: 2 PRIMARY assignments (overlapping)")
     return True
 
 

@@ -133,3 +133,54 @@ class TestRoleMatrixAndAuth:
         res = client.get("/api/v1/health")
         assert res.status_code == 200
         assert res.json()["status"] == "ok"
+
+    def test_unknown_demo_token_rejected_with_401(self):
+        """Unknown or arbitrary demo tokens must be rejected with 401."""
+        app.dependency_overrides.pop(get_current_principal_dep, None)
+        res = client.get(
+            "/api/v1/pods", headers={"Authorization": "Bearer demo-token-random-attacker"}
+        )
+        assert res.status_code == 401
+
+    def test_pod_lead_forbidden_from_other_pod_view(self):
+        """Pod Lead cannot view another pod's roster via query param tampering."""
+        own_pod = uuid4()
+        other_pod = uuid4()
+        app.dependency_overrides[get_current_principal_dep] = lambda: make_principal(
+            UserRole.POD_LEAD, pod_id=own_pod
+        )
+
+        res = client.get(f"/api/v1/rosters/2026-12?view=pod&id={other_pod}")
+        assert res.status_code == 403
+
+    def test_employee_forbidden_from_other_employee_view(self):
+        """Employee cannot view another employee's roster via query param tampering."""
+        own_emp = uuid4()
+        other_emp = uuid4()
+        app.dependency_overrides[get_current_principal_dep] = lambda: make_principal(
+            UserRole.EMPLOYEE, emp_id=own_emp
+        )
+
+        res = client.get(f"/api/v1/rosters/2026-12?view=employee&id={other_emp}")
+        assert res.status_code == 403
+
+    def test_structural_report_endpoint(self):
+        """GET /structural returns structural issues list."""
+        app.dependency_overrides[get_current_principal_dep] = lambda: make_principal(
+            UserRole.MANAGER
+        )
+        res = client.get("/api/v1/structural?month=2026-12")
+        assert res.status_code == 200
+        assert isinstance(res.json(), list)
+
+    def test_coverage_override_direct_create_validation(self):
+        """Coverage override requires exactly one of weekday or date."""
+        app.dependency_overrides[get_current_principal_dep] = lambda: make_principal(
+            UserRole.MANAGER
+        )
+        # Missing both weekday and date -> 400
+        res = client.post(
+            "/api/v1/coverage-overrides",
+            json={"process_id": str(uuid4()), "min_coverage": 2},
+        )
+        assert res.status_code in (400, 404)

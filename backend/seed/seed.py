@@ -6,7 +6,7 @@ Creates 5 pods, 37 employees, 23 brands with processes, assignments, holidays, l
 import os
 import sys
 from datetime import date
-from uuid import UUID, uuid4
+from uuid import UUID
 
 # Add backend to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -374,12 +374,12 @@ def seed_assignments(db: Session, employees: dict[str, UUID], processes: dict[st
             db.add(assignment)
 
     # Overlapping PRIMARY assignments (Planted case 7) - two people on one process
-    # Add a second PRIMARY to ZENITH_CS
-    zenith_cs = processes.get("ZENITH_CS")
-    if zenith_cs and len(agent_names) > 18:
+    # Add a second PRIMARY to UNITY_CS (leaving ZENITH_CS as 365 sole-resource)
+    unity_cs = processes.get("UNITY_CS")
+    if unity_cs and len(agent_names) > 18:
         assignment = Assignment(
             employee_id=employees[agent_names[18]],
-            process_id=zenith_cs,
+            process_id=unity_cs,
             type=AssignmentType.PRIMARY,
         )
         db.add(assignment)
@@ -481,7 +481,7 @@ def seed_demo_users(db: Session, employees: dict[str, UUID]) -> None:
 
     # Manager user (no employee_id)
     manager_user = AppUser(
-        id=uuid4(),  # Would match auth.users.id
+        id=UUID("11111111-1111-1111-1111-111111111111"),
         email="manager@demo.com",
         role="MANAGER",
         employee_id=None,
@@ -490,7 +490,7 @@ def seed_demo_users(db: Session, employees: dict[str, UUID]) -> None:
 
     # Pod Lead user (linked to Meera Patel - Alpha lead)
     pod_lead_user = AppUser(
-        id=uuid4(),
+        id=UUID("22222222-2222-2222-2222-222222222222"),
         email="podlead@demo.com",
         role="POD_LEAD",
         employee_id=employees.get("Meera Patel"),
@@ -514,7 +514,7 @@ def seed_demo_users(db: Session, employees: dict[str, UUID]) -> None:
     ]
     demo_employee_name = agent_names[0] if agent_names else "Amit Kumar"
     employee_user = AppUser(
-        id=uuid4(),
+        id=UUID("33333333-3333-3333-3333-333333333333"),
         email="employee@demo.com",
         role="EMPLOYEE",
         employee_id=employees.get(demo_employee_name),

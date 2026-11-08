@@ -131,12 +131,15 @@ class RosterSolver:
         self._add_shortfall_definition()
 
     def _add_locked_entries(self) -> None:
-        """Fix locked entries from previous roster."""
+        """Fix locked entries from previous roster, preserving their actual status."""
         if not self._prev_entries:
             return
         for (emp_id, d), entry in self._prev_entries.items():
             if entry.locked and emp_id in self._emp_ids:
-                self.model.Add(self._work[(emp_id, d)] == 1)
+                if entry.status == DayStatus.WORK:
+                    self.model.Add(self._work[(emp_id, d)] == 1)
+                else:
+                    self.model.Add(self._work[(emp_id, d)] == 0)
 
     def _add_closed_days(self) -> None:
         """No work on closed days for any process employee is assigned to."""
@@ -254,6 +257,9 @@ class RosterSolver:
                 # shortfall >= req - supply
                 self.model.Add(shortfall_var >= req - total_supply)
                 # shortfall >= 0 (enforced by domain)
+            else:
+                # No eligible supply available; shortfall equals required coverage
+                self.model.Add(shortfall_var >= req)
 
     def _add_objective(self) -> None:
         """Add the optimization objective."""
@@ -301,8 +307,17 @@ class RosterSolver:
                     if d.weekday() == pref_day and (emp_id, d) in self._work:
                         objective_terms.append(self._work[(emp_id, d)] * pref_off_missed_w)
 
-        # 5. Fairness spread penalty (simplified - penalize Sunday/holiday work variance)
-        # This is approximated by penalizing Sunday/holiday work
+        # 5. Workload balancing: minimize workload spread across active employees
+        if len(self._emp_ids) > 1 and len(self._dates) > 0:
+            max_work = self.model.NewIntVar(0, len(self._dates), "max_work_days")
+            min_work = self.model.NewIntVar(0, len(self._dates), "min_work_days")
+            for emp_id in self._emp_ids:
+                emp_work_total = sum(self._work[(emp_id, d)] for d in self._dates)
+                self.model.Add(max_work >= emp_work_total)
+                self.model.Add(min_work <= emp_work_total)
+            objective_terms.append((max_work - min_work) * fairness_spread_w)
+
+        # Sunday/holiday work penalty
         for emp in self.problem.employees:
             if not emp.active:
                 continue
@@ -314,7 +329,8 @@ class RosterSolver:
                 )
                 if is_sunday or is_ph:
                     if (emp_id, d) in self._work:
-                        objective_terms.append(self._work[(emp_id, d)] * fairness_spread_w)
+                        half_spread = fairness_spread_w // 2 + 1
+                        objective_terms.append(self._work[(emp_id, d)] * half_spread)
 
         # 6. Spare coverage penalty (people working when not needed)
         # Only penalize if supply > required (handled via shortfall being 0)
@@ -334,12 +350,52 @@ class RosterSolver:
         status = self.solver.Solve(self.model)
         solve_ms = int((time.time() - start_time) * 1000)
 
+        # Map solver status
+        status_map = {
+            cp_model.OPTIMAL: "OPTIMAL",
+            cp_model.FEASIBLE: "FEASIBLE",
+            cp_model.INFEASIBLE: "INFEASIBLE",
+            cp_model.MODEL_INVALID: "MODEL_INVALID",
+            cp_model.UNKNOWN: "UNKNOWN",
+        }
+        status_str = status_map.get(status, "UNKNOWN")
+
+        # Do not access solution variables if solver did not find a feasible/optimal solution
+        if status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+            return SolverResult(
+                entries=[],
+                covers=[],
+                status=status_str,
+                objective=0,
+                best_bound=0,
+                solve_ms=solve_ms,
+                gaps_total=0,
+                gaps_unresolved_by_reason=(
+                    {"solver_infeasible": 1} if status == cp_model.INFEASIBLE else {}
+                ),
+            )
+
         # Extract solution
         entries = []
         covers = []
 
         for emp_id in self._emp_ids:
             for d in self._dates:
+                # If entry was locked from previous roster, preserve its status and lock flag
+                if self._prev_entries and (emp_id, d) in self._prev_entries:
+                    prev_entry = self._prev_entries[(emp_id, d)]
+                    if prev_entry.locked:
+                        entries.append(
+                            RosterEntry(
+                                employee_id=__import__("uuid").UUID(emp_id),
+                                date=d,
+                                status=prev_entry.status,
+                                locked=True,
+                                source=prev_entry.source,
+                            )
+                        )
+                        continue
+
                 if self.solver.Value(self._work[(emp_id, d)]) == 1:
                     entries.append(
                         RosterEntry(
@@ -353,7 +409,7 @@ class RosterSolver:
                 else:
                     # Check if WO, PH, LEAVE, COMP_OFF
                     blocked = build_blocked_days(self.problem)
-                    status = DayStatus.WO
+                    status_day = DayStatus.WO
                     if (emp_id, d) in blocked:
                         # Determine specific blocked status
                         emp = next(e for e in self.problem.employees if str(e.id) == emp_id)
@@ -361,9 +417,9 @@ class RosterSolver:
                             if leave.employee_id == emp.id and leave.status == "APPROVED":
                                 if leave.start_date <= d <= leave.end_date:
                                     if leave.type == "COMP_OFF":
-                                        status = DayStatus.COMP_OFF
+                                        status_day = DayStatus.COMP_OFF
                                     else:
-                                        status = DayStatus.LEAVE
+                                        status_day = DayStatus.LEAVE
                                     break
                     else:
                         # Check for holidays
@@ -380,13 +436,13 @@ class RosterSolver:
                                         and p.brand_id == h.brand_id
                                     )
                                 ):
-                                    status = DayStatus.PH
+                                    status_day = DayStatus.PH
                                     break
                     entries.append(
                         RosterEntry(
                             employee_id=__import__("uuid").UUID(emp_id),
                             date=d,
-                            status=status,
+                            status=status_day,
                             locked=False,
                             source=EntrySource.GENERATED,
                         )
@@ -418,24 +474,9 @@ class RosterSolver:
                 reason = f"{process.name}_{d.isoformat()}"
                 gaps_by_reason[reason] = gaps_by_reason.get(reason, 0) + gap
 
-        # Map solver status
-        status_map = {
-            cp_model.OPTIMAL: "OPTIMAL",
-            cp_model.FEASIBLE: "FEASIBLE",
-            cp_model.INFEASIBLE: "INFEASIBLE",
-            cp_model.MODEL_INVALID: "MODEL_INVALID",
-            cp_model.UNKNOWN: "UNKNOWN",
-        }
-        status_str = status_map.get(status, "UNKNOWN")
-
-        # If we got a solution (entries exist), treat UNKNOWN as FEASIBLE
-        if status_str == "UNKNOWN" and entries:
-            status_str = "FEASIBLE"
-
         # Compute objective and best bound
-        has_solution = status in (cp_model.OPTIMAL, cp_model.FEASIBLE, cp_model.UNKNOWN) and entries
-        objective_val = int(self.solver.ObjectiveValue()) if has_solution else 0
-        best_bound_val = int(self.solver.BestObjectiveBound()) if has_solution else 0
+        objective_val = int(self.solver.ObjectiveValue())
+        best_bound_val = int(self.solver.BestObjectiveBound())
 
         return SolverResult(
             entries=entries,
