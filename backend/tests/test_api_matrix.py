@@ -10,6 +10,9 @@ from fastapi.testclient import TestClient
 
 # ponytail: mock db session globally for API matrix tests
 mock_db = MagicMock()
+mock_db.query.return_value.all.return_value = []
+mock_db.query.return_value.filter.return_value.all.return_value = []
+mock_db.query.return_value.filter.return_value.first.return_value = None
 app.dependency_overrides[get_db] = lambda: mock_db
 client = TestClient(app)
 
@@ -25,7 +28,7 @@ def make_principal(role: UserRole, pod_id=None, emp_id=None) -> Principal:
 
 
 class TestRoleMatrixAndAuth:
-    """Tests for role matrix (Manager, Pod Lead, Employee) and validation."""
+    """Tests for role matrix (Manager, Pod Lead, Employee), validation, and success cases."""
 
     def teardown_method(self):
         # reset auth override after each test
@@ -36,44 +39,47 @@ class TestRoleMatrixAndAuth:
         """Endpoints requiring MANAGER must return 403 for POD_LEAD and EMPLOYEE."""
         app.dependency_overrides[get_current_principal_dep] = lambda: make_principal(role)
 
-        # 1. Roster generate
-        res = client.post(
-            "/api/v1/rosters/2025-03/generate", json={"keep_locked": False, "time_limit_s": 5}
-        )
-        assert res.status_code == 403
-        assert "Manager role required" in res.json()["detail"]
+        for endpoint, method, body in [
+            ("/api/v1/rosters/2025-03/generate", "post", {"keep_locked": False, "time_limit_s": 5}),
+            (
+                "/api/v1/rosters/2025-03/regenerate",
+                "post",
+                {"mode": "MINIMAL_CHANGE", "save": False},
+            ),
+            ("/api/v1/rosters/2025-03/submit-review", "post", None),
+            ("/api/v1/rosters/2025-03/publish", "post", None),
+            (
+                "/api/v1/employees",
+                "post",
+                {"name": "New Agent", "role": "AGENT", "pod_id": str(uuid4())},
+            ),
+            ("/api/v1/pods", "post", {"name": "New Pod"}),
+            ("/api/v1/brands", "post", {"name": "New Brand"}),
+        ]:
+            res = client.post(endpoint, json=body) if method == "post" else client.get(endpoint)
+            assert res.status_code == 403
+            assert "Manager role required" in res.json()["detail"]
 
-        # 2. Submit for review
-        res = client.post("/api/v1/rosters/2025-03/submit-review")
-        assert res.status_code == 403
-        assert "Manager role required" in res.json()["detail"]
-
-        # 3. Publish
-        res = client.post("/api/v1/rosters/2025-03/publish")
-        assert res.status_code == 403
-        assert "Manager role required" in res.json()["detail"]
-
-        # 4. Config employee creation
-        res = client.post(
-            "/api/v1/employees", json={"name": "New Agent", "role": "AGENT", "pod_id": str(uuid4())}
-        )
-        assert res.status_code == 403
-        assert "Manager role required" in res.json()["detail"]
-
-    def test_pod_lead_endpoints_forbidden_for_employee(self):
+    @pytest.mark.parametrize(
+        "endpoint",
+        [
+            "/api/v1/rosters/2025-03/fairness",
+            "/api/v1/pods",
+            "/api/v1/employees",
+        ],
+    )
+    def test_pod_lead_endpoints_forbidden_for_employee(self, endpoint):
         """Endpoints requiring POD_LEAD_OR_MANAGER must return 403 for EMPLOYEE."""
         app.dependency_overrides[get_current_principal_dep] = lambda: make_principal(
             UserRole.EMPLOYEE
         )
 
-        # Fairness endpoint requires Pod Lead or Manager
-        res = client.get("/api/v1/rosters/2025-03/fairness")
+        res = client.get(endpoint)
         assert res.status_code == 403
         assert "Pod Lead or Manager role required" in res.json()["detail"]
 
     def test_unauthenticated_request_fails(self):
         """Requests without principal/token must fail with 401 or 403."""
-        # Ensure no principal override
         app.dependency_overrides.pop(get_current_principal_dep, None)
 
         res = client.post("/api/v1/rosters/2025-03/generate", json={})
@@ -83,26 +89,47 @@ class TestRoleMatrixAndAuth:
         "url,method,body",
         [
             ("/api/v1/rosters/2025-03/generate", "post", {"time_limit_s": "not-an-int"}),
+            ("/api/v1/rosters/2025-03/regenerate", "post", {"mode": "INVALID_MODE"}),
             ("/api/v1/leaves", "post", {"start_date": "invalid-date"}),
-            ("/api/v1/employees", "post", {}),  # missing required fields
+            ("/api/v1/leaves/preview", "post", {"start_date": "invalid"}),
+            ("/api/v1/employees", "post", {}),
+            ("/api/v1/pods", "post", {}),
+            ("/api/v1/brands", "post", {}),
         ],
     )
     def test_validation_errors(self, url, method, body):
         """Invalid schemas must return 422 Unprocessable Entity."""
-        # Authenticate as Manager so auth passes and Pydantic validation executes
         app.dependency_overrides[get_current_principal_dep] = lambda: make_principal(
             UserRole.MANAGER
         )
 
-        if method == "post":
-            res = client.post(url, json=body)
-        else:
-            res = client.get(url)
-
+        res = client.post(url, json=body) if method == "post" else client.get(url)
         assert res.status_code == 422
 
+    @pytest.mark.parametrize(
+        "endpoint",
+        [
+            "/api/v1/pods",
+            "/api/v1/employees",
+            "/api/v1/brands",
+            "/api/v1/processes",
+            "/api/v1/assignments",
+            "/api/v1/holidays",
+            "/api/v1/leaves",
+        ],
+    )
+    def test_list_endpoints_success_for_manager(self, endpoint):
+        """Authenticated manager can fetch config and entity lists."""
+        app.dependency_overrides[get_current_principal_dep] = lambda: make_principal(
+            UserRole.MANAGER
+        )
+
+        res = client.get(endpoint)
+        assert res.status_code == 200
+        assert isinstance(res.json(), list)
+
     def test_health_success(self):
-        """Health check returns 200."""
+        """Health check returns 200 without authentication."""
         res = client.get("/api/v1/health")
         assert res.status_code == 200
         assert res.json()["status"] == "ok"
