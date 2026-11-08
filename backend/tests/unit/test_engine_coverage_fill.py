@@ -1,35 +1,35 @@
 from datetime import date
 from uuid import uuid4
 
+from app.engine.availability import get_employee_blocked_days, is_working_day
+from app.engine.checker import check_coverage_independent
+from app.engine.coverage import get_coverage_summary, get_supply_for_process
+from app.engine.demand import get_brand_demand, get_process_demand
 from app.engine.lib.dates import (
-    week_bounds,
-    is_full_week_in_month,
-    weeks_in_month,
     add_months,
     format_month,
-    parse_month,
+    is_full_week_in_month,
     month_start_end,
+    parse_month,
+    week_bounds,
+    weeks_in_month,
 )
-from app.engine.availability import is_working_day, get_employee_blocked_days
-from app.engine.demand import get_brand_demand, get_process_demand
-from app.engine.coverage import get_supply_for_process, get_coverage_summary
-from app.engine.validator import Validator, make_issue_id
-from app.engine.checker import check_coverage_independent
 from app.engine.types import (
-    Employee,
-    EmployeeRole,
-    Process,
     Assignment,
     AssignmentType,
     CoverAssignment,
-    EntrySource,
-    RosterEntry,
     DayStatus,
+    Employee,
+    EmployeeRole,
+    EntrySource,
     Issue,
     IssueSeverity,
-    RuleID,
     Problem,
+    Process,
+    RosterEntry,
+    RuleID,
 )
+from app.engine.validator import Validator, make_issue_id
 
 
 def test_dates_lib():
@@ -39,8 +39,12 @@ def test_dates_lib():
     assert mon == date(2025, 3, 10)
     assert sun == date(2025, 3, 16)
 
-    assert is_full_week_in_month(date(2025, 3, 3), date(2025, 3, 9), date(2025, 3, 1), date(2025, 3, 31))
-    assert not is_full_week_in_month(date(2025, 2, 24), date(2025, 3, 2), date(2025, 3, 1), date(2025, 3, 31))
+    assert is_full_week_in_month(
+        date(2025, 3, 3), date(2025, 3, 9), date(2025, 3, 1), date(2025, 3, 31)
+    )
+    assert not is_full_week_in_month(
+        date(2025, 2, 24), date(2025, 3, 2), date(2025, 3, 1), date(2025, 3, 31)
+    )
 
     # weeks_in_month
     w = weeks_in_month(date(2025, 3, 1), date(2025, 3, 31))
@@ -81,8 +85,12 @@ def test_availability_helpers():
 
 def test_demand_and_coverage_helpers():
     brand_id = uuid4()
-    p1 = Process(id=uuid4(), brand_id=brand_id, name="Proc1", calendar_mode="ALL_365", min_coverage=1)
-    p2 = Process(id=uuid4(), brand_id=uuid4(), name="Proc2", calendar_mode="ALL_365", min_coverage=1)
+    p1 = Process(
+        id=uuid4(), brand_id=brand_id, name="Proc1", calendar_mode="ALL_365", min_coverage=1
+    )
+    p2 = Process(
+        id=uuid4(), brand_id=uuid4(), name="Proc2", calendar_mode="ALL_365", min_coverage=1
+    )
     d1 = date(2025, 3, 1)
 
     grid = {(str(p1.id), d1): 2, (str(p2.id), d1): 1}
@@ -99,11 +107,25 @@ def test_demand_and_coverage_helpers():
         Assignment(employee_id=emp2_id, process_id=p1.id, type=AssignmentType.BACKUP),
     ]
     entries = [
-        RosterEntry(employee_id=emp1_id, date=d1, status=DayStatus.WORK, locked=False, source=EntrySource.GENERATED),
-        RosterEntry(employee_id=emp2_id, date=d1, status=DayStatus.WORK, locked=False, source=EntrySource.GENERATED),
+        RosterEntry(
+            employee_id=emp1_id,
+            date=d1,
+            status=DayStatus.WORK,
+            locked=False,
+            source=EntrySource.GENERATED,
+        ),
+        RosterEntry(
+            employee_id=emp2_id,
+            date=d1,
+            status=DayStatus.WORK,
+            locked=False,
+            source=EntrySource.GENERATED,
+        ),
     ]
     covers = [
-        CoverAssignment(employee_id=emp2_id, process_id=p1.id, date=d1, source=EntrySource.GENERATED),
+        CoverAssignment(
+            employee_id=emp2_id, process_id=p1.id, date=d1, source=EntrySource.GENERATED
+        ),
     ]
 
     supply = get_supply_for_process(entries, covers, assignments, str(p1.id), d1)
@@ -124,14 +146,32 @@ def test_demand_and_coverage_helpers():
 
 def test_validator_helpers():
     iss_err = Issue(
-        id="1", rule=RuleID.COV_ZERO, severity=IssueSeverity.ERROR, structural=True,
-        brand_id=None, process_id=None, employee_id=None, pod_id=None, date=None,
-        message="err", cause="c", suggestion_hint="s"
+        id="1",
+        rule=RuleID.COV_ZERO,
+        severity=IssueSeverity.ERROR,
+        structural=True,
+        brand_id=None,
+        process_id=None,
+        employee_id=None,
+        pod_id=None,
+        date=None,
+        message="err",
+        cause="c",
+        suggestion_hint="s",
     )
     iss_warn = Issue(
-        id="2", rule=RuleID.CONSEC_MAX, severity=IssueSeverity.WARNING, structural=False,
-        brand_id=None, process_id=None, employee_id=None, pod_id=None, date=None,
-        message="warn", cause="c", suggestion_hint="s"
+        id="2",
+        rule=RuleID.CONSEC_MAX,
+        severity=IssueSeverity.WARNING,
+        structural=False,
+        brand_id=None,
+        process_id=None,
+        employee_id=None,
+        pod_id=None,
+        date=None,
+        message="warn",
+        cause="c",
+        suggestion_hint="s",
     )
     val = Validator([])
     issues = [iss_err, iss_warn]

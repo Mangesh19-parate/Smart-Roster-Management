@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock
-from app.main import app
+
 from app.db.session import get_db
+from app.main import app
 from fastapi.testclient import TestClient
 
 # ponytail: override get_db to prevent remote connection hang

@@ -62,9 +62,15 @@ def test_struct_no_backup_zenith() -> None:
 
     # Employee works all days (no rest possible)
     entries = {}
-    for d in [date(2026, 12, 1), date(2026, 12, 2), date(2026, 12, 3),
-              date(2026, 12, 4), date(2026, 12, 5), date(2026, 12, 6),
-              date(2026, 12, 7)]:
+    for d in [
+        date(2026, 12, 1),
+        date(2026, 12, 2),
+        date(2026, 12, 3),
+        date(2026, 12, 4),
+        date(2026, 12, 5),
+        date(2026, 12, 6),
+        date(2026, 12, 7),
+    ]:
         entries[(str(emp_id), d)] = RosterEntry(
             employee_id=emp_id,
             date=d,
@@ -120,8 +126,12 @@ def test_struct_no_backup_ok_with_floater() -> None:
         min_coverage=1,
     )
 
-    primary_assignment = Assignment(employee_id=emp_id, process_id=proc_id, type=AssignmentType.PRIMARY)
-    backup_assignment = Assignment(employee_id=floater_id, process_id=proc_id, type=AssignmentType.BACKUP)
+    primary_assignment = Assignment(
+        employee_id=emp_id, process_id=proc_id, type=AssignmentType.PRIMARY
+    )
+    backup_assignment = Assignment(
+        employee_id=floater_id, process_id=proc_id, type=AssignmentType.BACKUP
+    )
 
     problem = Problem(
         month_start=date(2026, 12, 1),
@@ -139,6 +149,7 @@ def test_struct_no_backup_ok_with_floater() -> None:
 
     # Both work all days in December - floater is available to cover any day
     from app.engine.lib.dates import days_in_range
+
     entries = {}
     for d in days_in_range(problem.month_start, problem.month_end):
         entries[(str(emp_id), d)] = RosterEntry(

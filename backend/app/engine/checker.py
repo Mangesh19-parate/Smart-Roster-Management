@@ -25,6 +25,7 @@ from app.engine.types import (
 @dataclass(frozen=True)
 class CheckResult:
     """Result of independent coverage check."""
+
     matches_validator: bool
     discrepancies: list[str]
     total_gaps: int
@@ -60,10 +61,7 @@ def compute_coverage_brute_force(
 
         # Count primary employees working
         for assignment in problem.assignments:
-            if (
-                str(assignment.process_id) == proc_id
-                and assignment.type == AssignmentType.PRIMARY
-            ):
+            if str(assignment.process_id) == proc_id and assignment.type == AssignmentType.PRIMARY:
                 emp_id = str(assignment.employee_id)
                 entry = entry_map.get((emp_id, d))
                 if entry and entry.status == DayStatus.WORK:
@@ -71,10 +69,7 @@ def compute_coverage_brute_force(
 
         # Count backup covers
         for assignment in problem.assignments:
-            if (
-                str(assignment.process_id) == proc_id
-                and assignment.type == AssignmentType.BACKUP
-            ):
+            if str(assignment.process_id) == proc_id and assignment.type == AssignmentType.BACKUP:
                 emp_id = str(assignment.employee_id)
                 cover = cover_map.get((emp_id, proc_id, d))
                 entry = entry_map.get((emp_id, d))
@@ -125,65 +120,61 @@ def check_coverage_independent(
 
         # Check COV_ZERO
         if supplied == 0:
-            checker_cov_zero.append(Issue(
-                id=f"CHECKER_COV_ZERO_{proc_id}_{d.isoformat()}",
-                rule=RuleID.COV_ZERO,
-                severity=IssueSeverity.ERROR,
-                structural=False,
-                brand_id=process.brand_id,
-                process_id=process.id,
-                employee_id=None,
-                pod_id=None,
-                date=d,
-                message=f"Checker: Zero coverage for {process.name} on {d.isoformat()}",
-                cause="Brute-force check found no coverage",
-                suggestion_hint="Add cover from backup or shift a rest day",
-            ))
+            checker_cov_zero.append(
+                Issue(
+                    id=f"CHECKER_COV_ZERO_{proc_id}_{d.isoformat()}",
+                    rule=RuleID.COV_ZERO,
+                    severity=IssueSeverity.ERROR,
+                    structural=False,
+                    brand_id=process.brand_id,
+                    process_id=process.id,
+                    employee_id=None,
+                    pod_id=None,
+                    date=d,
+                    message=f"Checker: Zero coverage for {process.name} on {d.isoformat()}",
+                    cause="Brute-force check found no coverage",
+                    suggestion_hint="Add cover from backup or shift a rest day",
+                )
+            )
 
         # Check COV_BELOW_MIN
         if 0 < supplied < req:
-            checker_cov_below.append(Issue(
-                id=f"CHECKER_COV_BELOW_MIN_{proc_id}_{d.isoformat()}",
-                rule=RuleID.COV_BELOW_MIN,
-                severity=IssueSeverity.ERROR,
-                structural=False,
-                brand_id=process.brand_id,
-                process_id=process.id,
-                employee_id=None,
-                pod_id=None,
-                date=d,
-                message=(
-                    f"Checker: Coverage below minimum for {process.name} "
-                    f"on {d.isoformat()}: {supplied}/{req}"
-                ),
-                cause=f"Brute-force check found only {supplied} of {req} required",
-                suggestion_hint="Add backup cover or adjust assignments",
-            ))
+            checker_cov_below.append(
+                Issue(
+                    id=f"CHECKER_COV_BELOW_MIN_{proc_id}_{d.isoformat()}",
+                    rule=RuleID.COV_BELOW_MIN,
+                    severity=IssueSeverity.ERROR,
+                    structural=False,
+                    brand_id=process.brand_id,
+                    process_id=process.id,
+                    employee_id=None,
+                    pod_id=None,
+                    date=d,
+                    message=(
+                        f"Checker: Coverage below minimum for {process.name} "
+                        f"on {d.isoformat()}: {supplied}/{req}"
+                    ),
+                    cause=f"Brute-force check found only {supplied} of {req} required",
+                    suggestion_hint="Add backup cover or adjust assignments",
+                )
+            )
 
     # Compare with validator
     for key, _v_issue in validator_cov_zero.items():
         if key not in {(i.process_id, i.date) for i in checker_cov_zero}:
-            discrepancies.append(
-                f"Validator has COV_ZERO for {key} but checker does not"
-            )
+            discrepancies.append(f"Validator has COV_ZERO for {key} but checker does not")
 
     for key, _c_issue in {(i.process_id, i.date): i for i in checker_cov_zero}.items():
         if key not in validator_cov_zero:
-            discrepancies.append(
-                f"Checker has COV_ZERO for {key} but validator does not"
-            )
+            discrepancies.append(f"Checker has COV_ZERO for {key} but validator does not")
 
     for key, _v_issue in validator_cov_below.items():
         if key not in {(i.process_id, i.date) for i in checker_cov_below}:
-            discrepancies.append(
-                f"Validator has COV_BELOW_MIN for {key} but checker does not"
-            )
+            discrepancies.append(f"Validator has COV_BELOW_MIN for {key} but checker does not")
 
     for key, _c_issue in {(i.process_id, i.date): i for i in checker_cov_below}.items():
         if key not in validator_cov_below:
-            discrepancies.append(
-                f"Checker has COV_BELOW_MIN for {key} but validator does not"
-            )
+            discrepancies.append(f"Checker has COV_BELOW_MIN for {key} but validator does not")
 
     all_checker_issues = checker_cov_zero + checker_cov_below
     total_gaps = sum(
@@ -196,8 +187,7 @@ def check_coverage_independent(
         discrepancies=discrepancies,
         total_gaps=total_gaps,
         validator_issues=[
-            i for i in validator_issues
-            if i.rule in (RuleID.COV_ZERO, RuleID.COV_BELOW_MIN)
+            i for i in validator_issues if i.rule in (RuleID.COV_ZERO, RuleID.COV_BELOW_MIN)
         ],
         checker_issues=all_checker_issues,
     )

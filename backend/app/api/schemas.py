@@ -3,6 +3,7 @@ Pydantic schemas for Smart Roster Management API.
 
 Matches docs/API.md exactly.
 """
+
 from __future__ import annotations
 
 from datetime import date, datetime
@@ -15,6 +16,7 @@ from pydantic import BaseModel, Field, field_validator
 # ============================================================================
 # Enums (matching database models)
 # ============================================================================
+
 
 class EmployeeRole(str, Enum):
     AGENT = "AGENT"
@@ -129,6 +131,7 @@ class ExplainSource(str, Enum):
 # Base Models
 # ============================================================================
 
+
 class ErrorResponse(BaseModel):
     error: ErrorDetail
 
@@ -142,6 +145,7 @@ class ErrorDetail(BaseModel):
 # ============================================================================
 # User / Auth Schemas
 # ============================================================================
+
 
 class UserResponse(BaseModel):
     id: UUID
@@ -179,6 +183,7 @@ class UserUpdateRequest(BaseModel):
 # ============================================================================
 # Config Schemas
 # ============================================================================
+
 
 class PodBase(BaseModel):
     name: str
@@ -286,8 +291,6 @@ class ProcessResponse(ProcessBase):
         from_attributes = True
 
 
-from typing import Optional
-
 class CoverageOverrideBase(BaseModel):
     process_id: UUID
     weekday: int | None = Field(default=None, ge=0, le=6)
@@ -374,14 +377,16 @@ class SettingsBase(BaseModel):
     weekly_rest_days: int = Field(default=1, ge=1, le=7)
     max_consecutive_days: int = Field(default=6, ge=1, le=14)
     week_start: str = "MON"
-    solver_weights: dict[str, int] = Field(default_factory=lambda: {
-        "short_total": 10000,
-        "entries_changed": 50,
-        "cover_assignments": 20,
-        "pref_off_missed": 5,
-        "fairness_spread": 15,
-        "spare_coverage": 2,
-    })
+    solver_weights: dict[str, int] = Field(
+        default_factory=lambda: {
+            "short_total": 10000,
+            "entries_changed": 50,
+            "cover_assignments": 20,
+            "pref_off_missed": 5,
+            "fairness_spread": 15,
+            "spare_coverage": 2,
+        }
+    )
 
 
 class SettingsResponse(SettingsBase):
@@ -391,6 +396,7 @@ class SettingsResponse(SettingsBase):
 # ============================================================================
 # Leave Schemas
 # ============================================================================
+
 
 class LeaveBase(BaseModel):
     employee_id: UUID
@@ -450,6 +456,7 @@ class LeavePreviewResponse(BaseModel):
 # ============================================================================
 # Roster Schemas
 # ============================================================================
+
 
 class RosterGenerateRequest(BaseModel):
     keep_locked: bool = True
@@ -636,6 +643,7 @@ class FairnessRow(BaseModel):
 # Changes / Suggestions Schemas
 # ============================================================================
 
+
 class ChangeAnalyzeRequest(BaseModel):
     type: ChangeType = ChangeType.LEAVE
     employee_id: UUID
@@ -678,6 +686,7 @@ class SuggestionApplyResponse(BaseModel):
 # Regenerate Schemas
 # ============================================================================
 
+
 class RosterRegenerateRequest(BaseModel):
     mode: RegenerateMode = RegenerateMode.MINIMAL_CHANGE
     save: bool = False
@@ -715,6 +724,7 @@ class RosterDiff(BaseModel):
 # Approval Schemas (Tier B)
 # ============================================================================
 
+
 class ApprovalDecisionRequest(BaseModel):
     decision: ApprovalStatus
     comment: str | None = None
@@ -742,6 +752,7 @@ class RosterAmendResponse(BaseModel):
 # Explanation Schemas (Tier B)
 # ============================================================================
 
+
 class ExplainRequest(BaseModel):
     month: str
     issue_id: str
@@ -755,6 +766,7 @@ class ExplainResponse(BaseModel):
 # ============================================================================
 # Utility Schemas
 # ============================================================================
+
 
 class HealthResponse(BaseModel):
     status: str

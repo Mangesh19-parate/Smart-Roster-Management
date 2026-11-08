@@ -225,11 +225,13 @@ class Settings:
     weekly_rest_days: int = 1
     max_consecutive_days: int = 6
     week_start: str = "MON"
-    solver_weights: dict[str, int] = field(default_factory=lambda: {
-        "short_total": 10000,
-        "entries_changed": 50,
-        "cover_assignments": 20,
-        "pref_off_missed": 5,
-        "fairness_spread": 15,
-        "spare_coverage": 2,
-    })
+    solver_weights: dict[str, int] = field(
+        default_factory=lambda: {
+            "short_total": 10000,
+            "entries_changed": 50,
+            "cover_assignments": 20,
+            "pref_off_missed": 5,
+            "fairness_spread": 15,
+            "spare_coverage": 2,
+        }
+    )

@@ -1,6 +1,7 @@
 """
 AI and template issue explanations (Tier B).
 """
+
 from __future__ import annotations
 
 import json

@@ -1,6 +1,7 @@
 """
 API routes package.
 """
+
 from __future__ import annotations
 
 # Import all route modules to register them

@@ -66,6 +66,7 @@ def make_basic_problem() -> Problem:
     )
     # Build demand grid
     from app.engine.demand import build_demand_grid
+
     return Problem(
         month_start=problem.month_start,
         month_end=problem.month_end,
@@ -82,18 +83,23 @@ def make_basic_problem() -> Problem:
     )
 
 
-def make_full_month_entries(problem: Problem, emp_id: uuid4, default_status: DayStatus = DayStatus.WORK) -> list[RosterEntry]:
+def make_full_month_entries(
+    problem: Problem, emp_id: uuid4, default_status: DayStatus = DayStatus.WORK
+) -> list[RosterEntry]:
     """Create entries for all days in the month."""
     from app.engine.lib.dates import days_in_range
+
     entries = []
     for d in days_in_range(problem.month_start, problem.month_end):
-        entries.append(RosterEntry(
-            employee_id=emp_id,
-            date=d,
-            status=default_status,
-            locked=False,
-            source=EntrySource.GENERATED,
-        ))
+        entries.append(
+            RosterEntry(
+                employee_id=emp_id,
+                date=d,
+                status=default_status,
+                locked=False,
+                source=EntrySource.GENERATED,
+            )
+        )
     return entries
 
 
@@ -106,10 +112,12 @@ def test_brute_force_coverage_matches_validator() -> None:
     entries = make_full_month_entries(problem, emp_id)
 
     # Run validator
-    validator = Validator([
-        CovZeroRule(),
-        CovBelowMinRule(),
-    ])
+    validator = Validator(
+        [
+            CovZeroRule(),
+            CovBelowMinRule(),
+        ]
+    )
     validator_issues = validator.validate(problem, entries, {})
 
     # Run independent checker
@@ -137,10 +145,12 @@ def test_brute_force_detects_cov_zero() -> None:
     )
 
     # Run validator
-    validator = Validator([
-        CovZeroRule(),
-        CovBelowMinRule(),
-    ])
+    validator = Validator(
+        [
+            CovZeroRule(),
+            CovBelowMinRule(),
+        ]
+    )
     validator_issues = validator.validate(problem, entries, {})
 
     # Run checker
@@ -196,6 +206,7 @@ def test_brute_force_detects_cov_below_min() -> None:
         demand_grid=None,
     )
     from app.engine.demand import build_demand_grid
+
     problem = Problem(
         month_start=problem.month_start,
         month_end=problem.month_end,
@@ -215,10 +226,12 @@ def test_brute_force_detects_cov_below_min() -> None:
     entries = make_full_month_entries(problem, emp_id)
 
     # Run validator
-    validator = Validator([
-        CovZeroRule(),
-        CovBelowMinRule(),
-    ])
+    validator = Validator(
+        [
+            CovZeroRule(),
+            CovBelowMinRule(),
+        ]
+    )
     validator_issues = validator.validate(problem, entries, {})
 
     # Run checker
@@ -269,8 +282,12 @@ def test_brute_force_with_backup_cover() -> None:
         min_coverage=1,
     )
 
-    primary_assignment = Assignment(employee_id=emp_id, process_id=proc_id, type=AssignmentType.PRIMARY)
-    backup_assignment = Assignment(employee_id=backup_id, process_id=proc_id, type=AssignmentType.BACKUP)
+    primary_assignment = Assignment(
+        employee_id=emp_id, process_id=proc_id, type=AssignmentType.PRIMARY
+    )
+    backup_assignment = Assignment(
+        employee_id=backup_id, process_id=proc_id, type=AssignmentType.BACKUP
+    )
 
     problem = Problem(
         month_start=date(2026, 12, 1),
@@ -287,6 +304,7 @@ def test_brute_force_with_backup_cover() -> None:
         demand_grid=None,
     )
     from app.engine.demand import build_demand_grid
+
     problem = Problem(
         month_start=problem.month_start,
         month_end=problem.month_end,
@@ -324,18 +342,22 @@ def test_brute_force_with_backup_cover() -> None:
     entries.extend(backup_entries)
 
     # Cover assignment
-    covers = [CoverAssignment(
-        employee_id=backup_id,
-        process_id=proc_id,
-        date=date(2026, 12, 15),
-        source=EntrySource.GENERATED,
-    )]
+    covers = [
+        CoverAssignment(
+            employee_id=backup_id,
+            process_id=proc_id,
+            date=date(2026, 12, 15),
+            source=EntrySource.GENERATED,
+        )
+    ]
 
     # Run validator
-    validator = Validator([
-        CovZeroRule(),
-        CovBelowMinRule(),
-    ])
+    validator = Validator(
+        [
+            CovZeroRule(),
+            CovBelowMinRule(),
+        ]
+    )
     validator_issues = validator.validate(problem, entries, covers)
 
     # Run checker

@@ -78,7 +78,9 @@ def make_basic_problem() -> Problem:
     return problem
 
 
-def make_full_month_entries(emp_id: uuid4, problem: Problem, default_status: DayStatus = DayStatus.WORK) -> dict:
+def make_full_month_entries(
+    emp_id: uuid4, problem: Problem, default_status: DayStatus = DayStatus.WORK
+) -> dict:
     """Create entries for all days in the month."""
     entries = {}
     for d in days_in_range(problem.month_start, problem.month_end):
@@ -399,7 +401,8 @@ def test_backup_cover_resolves_cov_zero() -> None:
         brands=problem.brands,
         processes=problem.processes,
         coverage_overrides=problem.coverage_overrides,
-        assignments=problem.assignments + [Assignment(employee_id=backup_id, process_id=proc_id, type=AssignmentType.BACKUP)],
+        assignments=problem.assignments
+        + [Assignment(employee_id=backup_id, process_id=proc_id, type=AssignmentType.BACKUP)],
         holidays=problem.holidays,
         leaves=problem.leaves,
         settings=problem.settings,

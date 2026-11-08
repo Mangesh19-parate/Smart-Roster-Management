@@ -101,8 +101,12 @@ def make_problem_with_backup() -> Problem:
         min_coverage=1,
     )
 
-    primary_assignment = Assignment(employee_id=emp_id, process_id=proc_id, type=AssignmentType.PRIMARY)
-    backup_assignment = Assignment(employee_id=backup_id, process_id=proc_id, type=AssignmentType.BACKUP)
+    primary_assignment = Assignment(
+        employee_id=emp_id, process_id=proc_id, type=AssignmentType.PRIMARY
+    )
+    backup_assignment = Assignment(
+        employee_id=backup_id, process_id=proc_id, type=AssignmentType.BACKUP
+    )
 
     return Problem(
         month_start=date(2026, 12, 1),
@@ -153,12 +157,14 @@ def test_solver_respects_weekly_rest() -> None:
     while current_monday <= month_end_sunday:
         week_end = sunday_of_week(current_monday)
         week_dates = [
-            d for d in days_in_range(current_monday, week_end)
+            d
+            for d in days_in_range(current_monday, week_end)
             if problem.month_start <= d <= problem.month_end
         ]
         if len(week_dates) >= 4:
             work_days = sum(
-                1 for d in week_dates
+                1
+                for d in week_dates
                 for e in result.entries
                 if e.date == d and e.status == DayStatus.WORK
             )
@@ -173,12 +179,16 @@ def test_solver_respects_max_consecutive() -> None:
 
     # Check no employee works more than 6 consecutive days
     emp_id = str(problem.employees[0].id)
-    work_dates = sorted(e.date for e in result.entries if str(e.employee_id) == emp_id and e.status == DayStatus.WORK)
+    work_dates = sorted(
+        e.date
+        for e in result.entries
+        if str(e.employee_id) == emp_id and e.status == DayStatus.WORK
+    )
 
     max_consec = 1
     current_consec = 1
     for i in range(1, len(work_dates)):
-        if (work_dates[i] - work_dates[i-1]).days == 1:
+        if (work_dates[i] - work_dates[i - 1]).days == 1:
             current_consec += 1
             max_consec = max(max_consec, current_consec)
         else:
@@ -238,7 +248,9 @@ def test_solver_with_holidays() -> None:
 
     assignment = Assignment(employee_id=emp_id, process_id=proc_id, type=AssignmentType.PRIMARY)
 
-    christmas = Holiday(date=date(2026, 12, 25), name="Christmas", scope=HolidayScope.COMPANY, brand_id=None)
+    christmas = Holiday(
+        date=date(2026, 12, 25), name="Christmas", scope=HolidayScope.COMPANY, brand_id=None
+    )
 
     problem = Problem(
         month_start=date(2026, 12, 1),

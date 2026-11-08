@@ -260,20 +260,23 @@ class CompOffUnusedRule(Rule):
                 if entry and entry.status == "WORK":
                     # Check if any of employee's primary processes had a PH on this day
                     primary_process_ids = {
-                        str(a.process_id) for a in problem.assignments
+                        str(a.process_id)
+                        for a in problem.assignments
                         if str(a.employee_id) == emp_id and a.type == "PRIMARY"
                     }
                     for proc_id in primary_process_ids:
                         process = next((p for p in problem.processes if str(p.id) == proc_id), None)
                         if process:
                             from app.engine.calendar import is_closed
+
                             if is_closed(process, d, problem.holidays, problem.coverage_overrides):
                                 ph_worked += 1
                                 break
 
             # Count COMP_OFF used
             compoff_used = sum(
-                1 for d in days_in_range(problem.month_start, problem.month_end)
+                1
+                for d in days_in_range(problem.month_start, problem.month_end)
                 if entries.get((emp_id, d)) and entries[(emp_id, d)].status == "COMP_OFF"
             )
 

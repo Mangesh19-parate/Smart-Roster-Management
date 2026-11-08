@@ -74,11 +74,13 @@ class Validator:
 
         # Sort by severity (ERROR first), then by rule ID, then by date
         severity_order = {IssueSeverity.ERROR: 0, IssueSeverity.WARNING: 1, IssueSeverity.INFO: 2}
-        all_issues.sort(key=lambda i: (
-            severity_order[i.severity],
-            i.rule.value,
-            i.date.isoformat() if i.date else "",
-        ))
+        all_issues.sort(
+            key=lambda i: (
+                severity_order[i.severity],
+                i.rule.value,
+                i.date.isoformat() if i.date else "",
+            )
+        )
 
         return all_issues
 

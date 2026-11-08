@@ -3,6 +3,7 @@ JWT verification and Principal for Smart Roster Management.
 
 Supports both HS256 (local dev with supabase_jwt_secret) and RS256 (production with JWKS).
 """
+
 from __future__ import annotations
 
 import time
@@ -25,6 +26,7 @@ from sqlalchemy.orm import Session
 @dataclass(frozen=True)
 class Principal:
     """Authenticated user principal with role and ownership info."""
+
     user_id: UUID
     email: str
     role: UserRole
@@ -63,6 +65,7 @@ class Principal:
 
 class TokenClaims(BaseModel):
     """Expected JWT claims from Supabase."""
+
     sub: str  # user_id
     email: str
     role: str  # "authenticated"
@@ -202,8 +205,12 @@ async def get_current_principal(
             user_id=UUID("11111111-1111-1111-1111-111111111111"),
             email=f"{role.value.lower()}@demo.local",
             role=role,
-            employee_id=None if role == UserRole.MANAGER else UUID("22222222-2222-2222-2222-222222222222"),
-            pod_id=None if role == UserRole.MANAGER else UUID("33333333-3333-3333-3333-333333333333"),
+            employee_id=None
+            if role == UserRole.MANAGER
+            else UUID("22222222-2222-2222-2222-222222222222"),
+            pod_id=None
+            if role == UserRole.MANAGER
+            else UUID("33333333-3333-3333-3333-333333333333"),
         )  # Remove "Bearer "
 
     try:
@@ -225,6 +232,7 @@ async def get_current_principal(
         )
 
     from app.db.models import AppUser
+
     user = db_session.query(AppUser).filter(AppUser.id == UUID(claims.sub)).first()
     if not user:
         raise HTTPException(
@@ -268,8 +276,12 @@ async def get_current_principal_dep(
             user_id=UUID("11111111-1111-1111-1111-111111111111"),
             email=f"{role.value.lower()}@demo.local",
             role=role,
-            employee_id=None if role == UserRole.MANAGER else UUID("22222222-2222-2222-2222-222222222222"),
-            pod_id=None if role == UserRole.MANAGER else UUID("33333333-3333-3333-3333-333333333333"),
+            employee_id=None
+            if role == UserRole.MANAGER
+            else UUID("22222222-2222-2222-2222-222222222222"),
+            pod_id=None
+            if role == UserRole.MANAGER
+            else UUID("33333333-3333-3333-3333-333333333333"),
         )
 
     try:
@@ -282,6 +294,7 @@ async def get_current_principal_dep(
         )
 
     from app.db.models import AppUser
+
     user = db.query(AppUser).filter(AppUser.id == UUID(claims.sub)).first()
     if not user:
         raise HTTPException(
@@ -336,9 +349,7 @@ def check_rate_limit(
     """Check if user is within rate limit. Returns True if allowed."""
     now = current_time()
     # Clean old entries
-    _rate_limit_store[user_id] = [
-        t for t in _rate_limit_store[user_id] if now - t < window_seconds
-    ]
+    _rate_limit_store[user_id] = [t for t in _rate_limit_store[user_id] if now - t < window_seconds]
     if len(_rate_limit_store[user_id]) >= limit:
         return False
     _rate_limit_store[user_id].append(now)
@@ -347,6 +358,7 @@ def check_rate_limit(
 
 def rate_limit_dependency(limit: int, window_seconds: int = 60):
     """Create a rate limit dependency for a specific limit."""
+
     async def _rate_limit(principal: Principal = Depends(get_current_principal_dep)) -> Principal:
         if not check_rate_limit(str(principal.user_id), limit, window_seconds):
             raise HTTPException(
@@ -354,4 +366,5 @@ def rate_limit_dependency(limit: int, window_seconds: int = 60):
                 detail=f"Rate limit exceeded: {limit} requests per {window_seconds}s",
             )
         return principal
+
     return _rate_limit

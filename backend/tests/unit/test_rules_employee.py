@@ -61,8 +61,13 @@ def test_wo_missing_when_no_rest_day_in_week() -> None:
     # Build complete month but with one week missing rest day
     # Week 1 (Nov 30 - Dec 6): Dec 1-6 WORK, Dec 6 WO (Sunday)
     entries = {}
-    for d in [date(2026, 12, 1), date(2026, 12, 2), date(2026, 12, 3),
-              date(2026, 12, 4), date(2026, 12, 5)]:
+    for d in [
+        date(2026, 12, 1),
+        date(2026, 12, 2),
+        date(2026, 12, 3),
+        date(2026, 12, 4),
+        date(2026, 12, 5),
+    ]:
         entries[(str(emp_id), d)] = RosterEntry(
             employee_id=emp_id,
             date=d,
@@ -85,8 +90,14 @@ def test_wo_missing_when_no_rest_day_in_week() -> None:
         locked=False,
         source=EntrySource.GENERATED,
     )
-    for d in [date(2026, 12, 8), date(2026, 12, 9), date(2026, 12, 10),
-              date(2026, 12, 11), date(2026, 12, 12), date(2026, 12, 13)]:
+    for d in [
+        date(2026, 12, 8),
+        date(2026, 12, 9),
+        date(2026, 12, 10),
+        date(2026, 12, 11),
+        date(2026, 12, 12),
+        date(2026, 12, 13),
+    ]:
         entries[(str(emp_id), d)] = RosterEntry(
             employee_id=emp_id,
             date=d,
@@ -95,9 +106,15 @@ def test_wo_missing_when_no_rest_day_in_week() -> None:
             source=EntrySource.GENERATED,
         )
     # Week 3 (Dec 14-20): ALL WORK (no rest day!)
-    for d in [date(2026, 12, 14), date(2026, 12, 15), date(2026, 12, 16),
-              date(2026, 12, 17), date(2026, 12, 18), date(2026, 12, 19),
-              date(2026, 12, 20)]:
+    for d in [
+        date(2026, 12, 14),
+        date(2026, 12, 15),
+        date(2026, 12, 16),
+        date(2026, 12, 17),
+        date(2026, 12, 18),
+        date(2026, 12, 19),
+        date(2026, 12, 20),
+    ]:
         entries[(str(emp_id), d)] = RosterEntry(
             employee_id=emp_id,
             date=d,
@@ -113,8 +130,14 @@ def test_wo_missing_when_no_rest_day_in_week() -> None:
         locked=False,
         source=EntrySource.GENERATED,
     )
-    for d in [date(2026, 12, 22), date(2026, 12, 23), date(2026, 12, 24),
-              date(2026, 12, 25), date(2026, 12, 26), date(2026, 12, 27)]:
+    for d in [
+        date(2026, 12, 22),
+        date(2026, 12, 23),
+        date(2026, 12, 24),
+        date(2026, 12, 25),
+        date(2026, 12, 26),
+        date(2026, 12, 27),
+    ]:
         entries[(str(emp_id), d)] = RosterEntry(
             employee_id=emp_id,
             date=d,
@@ -157,8 +180,13 @@ def test_wo_not_missing_when_one_rest_day() -> None:
     # Build complete month with proper rest days each week
     # Week 1 (Nov 30 - Dec 6): Dec 1-5 WORK, Dec 6 WO (Sunday)
     entries = {}
-    for d in [date(2026, 12, 1), date(2026, 12, 2), date(2026, 12, 3),
-              date(2026, 12, 4), date(2026, 12, 5)]:
+    for d in [
+        date(2026, 12, 1),
+        date(2026, 12, 2),
+        date(2026, 12, 3),
+        date(2026, 12, 4),
+        date(2026, 12, 5),
+    ]:
         entries[(str(emp_id), d)] = RosterEntry(
             employee_id=emp_id,
             date=d,
@@ -181,8 +209,14 @@ def test_wo_not_missing_when_one_rest_day() -> None:
         locked=False,
         source=EntrySource.GENERATED,
     )
-    for d in [date(2026, 12, 8), date(2026, 12, 9), date(2026, 12, 10),
-              date(2026, 12, 11), date(2026, 12, 12), date(2026, 12, 13)]:
+    for d in [
+        date(2026, 12, 8),
+        date(2026, 12, 9),
+        date(2026, 12, 10),
+        date(2026, 12, 11),
+        date(2026, 12, 12),
+        date(2026, 12, 13),
+    ]:
         entries[(str(emp_id), d)] = RosterEntry(
             employee_id=emp_id,
             date=d,
@@ -198,8 +232,14 @@ def test_wo_not_missing_when_one_rest_day() -> None:
         locked=False,
         source=EntrySource.GENERATED,
     )
-    for d in [date(2026, 12, 15), date(2026, 12, 16), date(2026, 12, 17),
-              date(2026, 12, 18), date(2026, 12, 19), date(2026, 12, 20)]:
+    for d in [
+        date(2026, 12, 15),
+        date(2026, 12, 16),
+        date(2026, 12, 17),
+        date(2026, 12, 18),
+        date(2026, 12, 19),
+        date(2026, 12, 20),
+    ]:
         entries[(str(emp_id), d)] = RosterEntry(
             employee_id=emp_id,
             date=d,
@@ -215,8 +255,14 @@ def test_wo_not_missing_when_one_rest_day() -> None:
         locked=False,
         source=EntrySource.GENERATED,
     )
-    for d in [date(2026, 12, 22), date(2026, 12, 23), date(2026, 12, 24),
-              date(2026, 12, 25), date(2026, 12, 26), date(2026, 12, 27)]:
+    for d in [
+        date(2026, 12, 22),
+        date(2026, 12, 23),
+        date(2026, 12, 24),
+        date(2026, 12, 25),
+        date(2026, 12, 26),
+        date(2026, 12, 27),
+    ]:
         entries[(str(emp_id), d)] = RosterEntry(
             employee_id=emp_id,
             date=d,
@@ -279,8 +325,13 @@ def test_consec_max_not_exceeded() -> None:
 
     # Work 5 consecutive days, then rest
     entries = {}
-    for d in [date(2026, 12, 1), date(2026, 12, 2), date(2026, 12, 3),
-              date(2026, 12, 4), date(2026, 12, 5)]:
+    for d in [
+        date(2026, 12, 1),
+        date(2026, 12, 2),
+        date(2026, 12, 3),
+        date(2026, 12, 4),
+        date(2026, 12, 5),
+    ]:
         entries[(str(emp_id), d)] = RosterEntry(
             employee_id=emp_id,
             date=d,
@@ -308,6 +359,7 @@ def test_capacity_exceeded() -> None:
     emp_id = problem.employees[0].id
 
     from app.engine.types import CoverAssignment
+
     proc_id1 = uuid4()
     proc_id2 = uuid4()
     covers = {
@@ -362,7 +414,9 @@ def test_compoff_unused_warning() -> None:
 
     assignment = Assignment(employee_id=emp_id, process_id=proc_id, type=AssignmentType.PRIMARY)
 
-    holiday = Holiday(date=date(2026, 12, 25), name="Christmas", scope=HolidayScope.COMPANY, brand_id=None)
+    holiday = Holiday(
+        date=date(2026, 12, 25), name="Christmas", scope=HolidayScope.COMPANY, brand_id=None
+    )
 
     problem = Problem(
         month_start=date(2026, 12, 1),

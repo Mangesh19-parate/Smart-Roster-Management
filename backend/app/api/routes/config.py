@@ -1,6 +1,7 @@
 """
 Config CRUD routes: pods, employees, brands, processes, assignments, holidays, settings
 """
+
 from __future__ import annotations
 
 from uuid import UUID
@@ -48,6 +49,7 @@ router = APIRouter(prefix="/api/v1", tags=["config"])
 # ============================================================================
 # Pods
 # ============================================================================
+
 
 @router.get("/pods", response_model=list[PodResponse])
 async def list_pods(
@@ -115,9 +117,7 @@ async def update_pod(
         )
 
     if request.name is not None:
-        existing = db.query(Pod).filter(
-            Pod.name == request.name, Pod.id != pod_id
-        ).first()
+        existing = db.query(Pod).filter(Pod.name == request.name, Pod.id != pod_id).first()
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -139,7 +139,12 @@ async def update_pod(
     )
 
 
-@router.delete("/pods/{pod_id}", status_code=status.HTTP_204_NO_CONTENT, response_class=Response, response_model=None)
+@router.delete(
+    "/pods/{pod_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+    response_model=None,
+)
 async def delete_pod(
     pod_id: UUID,
     confirm: bool = Query(default=False),
@@ -169,6 +174,7 @@ async def delete_pod(
 # ============================================================================
 # Employees
 # ============================================================================
+
 
 @router.get("/employees", response_model=list[EmployeeResponse])
 async def list_employees(
@@ -314,7 +320,12 @@ async def update_employee(
     )
 
 
-@router.delete("/employees/{employee_id}", status_code=status.HTTP_204_NO_CONTENT, response_class=Response, response_model=None)
+@router.delete(
+    "/employees/{employee_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+    response_model=None,
+)
 async def delete_employee(
     employee_id: UUID,
     confirm: bool = Query(default=False),
@@ -331,6 +342,7 @@ async def delete_employee(
 
     # Check for dependent rosters/leaves
     from app.db.models import Assignment, Leave, RosterEntry
+
     entry_count = db.query(RosterEntry).filter(RosterEntry.employee_id == employee_id).count()
     leave_count = db.query(Leave).filter(Leave.employee_id == employee_id).count()
     assignment_count = db.query(Assignment).filter(Assignment.employee_id == employee_id).count()
@@ -349,6 +361,7 @@ async def delete_employee(
 # ============================================================================
 # Brands
 # ============================================================================
+
 
 @router.get("/brands", response_model=list[BrandResponse])
 async def list_brands(
@@ -412,9 +425,7 @@ async def update_brand(
         )
 
     if request.name is not None:
-        existing = db.query(Brand).filter(
-            Brand.name == request.name, Brand.id != brand_id
-        ).first()
+        existing = db.query(Brand).filter(Brand.name == request.name, Brand.id != brand_id).first()
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -435,7 +446,12 @@ async def update_brand(
     )
 
 
-@router.delete("/brands/{brand_id}", status_code=status.HTTP_204_NO_CONTENT, response_class=Response, response_model=None)
+@router.delete(
+    "/brands/{brand_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+    response_model=None,
+)
 async def delete_brand(
     brand_id: UUID,
     confirm: bool = Query(default=False),
@@ -465,6 +481,7 @@ async def delete_brand(
 # ============================================================================
 # Processes
 # ============================================================================
+
 
 @router.get("/processes", response_model=list[ProcessResponse])
 async def list_processes(
@@ -505,10 +522,14 @@ async def create_process(
             detail="Brand not found",
         )
 
-    existing = db.query(Process).filter(
-        Process.brand_id == request.brand_id,
-        Process.name == request.name,
-    ).first()
+    existing = (
+        db.query(Process)
+        .filter(
+            Process.brand_id == request.brand_id,
+            Process.name == request.name,
+        )
+        .first()
+    )
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -551,11 +572,15 @@ async def update_process(
         )
 
     if request.name is not None:
-        existing = db.query(Process).filter(
-            Process.brand_id == process.brand_id,
-            Process.name == request.name,
-            Process.id != process_id,
-        ).first()
+        existing = (
+            db.query(Process)
+            .filter(
+                Process.brand_id == process.brand_id,
+                Process.name == request.name,
+                Process.id != process_id,
+            )
+            .first()
+        )
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -580,7 +605,12 @@ async def update_process(
     )
 
 
-@router.delete("/processes/{process_id}", status_code=status.HTTP_204_NO_CONTENT, response_class=Response, response_model=None)
+@router.delete(
+    "/processes/{process_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+    response_model=None,
+)
 async def delete_process(
     process_id: UUID,
     confirm: bool = Query(default=False),
@@ -597,15 +627,12 @@ async def delete_process(
 
     # Check for dependent assignments, overrides, covers
     from app.db.models import Assignment, CoverageOverride, CoverAssignment
-    assignment_count = db.query(Assignment).filter(
-        Assignment.process_id == process_id
-    ).count()
-    override_count = db.query(CoverageOverride).filter(
-        CoverageOverride.process_id == process_id
-    ).count()
-    cover_count = db.query(CoverAssignment).filter(
-        CoverAssignment.process_id == process_id
-    ).count()
+
+    assignment_count = db.query(Assignment).filter(Assignment.process_id == process_id).count()
+    override_count = (
+        db.query(CoverageOverride).filter(CoverageOverride.process_id == process_id).count()
+    )
+    cover_count = db.query(CoverAssignment).filter(CoverAssignment.process_id == process_id).count()
 
     total = assignment_count + override_count + cover_count
     if total > 0 and not confirm:
@@ -621,6 +648,7 @@ async def delete_process(
 # ============================================================================
 # Coverage Overrides
 # ============================================================================
+
 
 @router.put("/processes/{process_id}/overrides", response_model=list[CoverageOverrideResponse])
 async def set_overrides(
@@ -689,6 +717,7 @@ async def set_overrides(
 # Assignments
 # ============================================================================
 
+
 @router.get("/assignments", response_model=list[AssignmentResponse])
 async def list_assignments(
     employee_id: UUID | None = Query(default=None),
@@ -739,10 +768,14 @@ async def create_assignment(
         )
 
     # Check for duplicate
-    existing = db.query(Assignment).filter(
-        Assignment.employee_id == request.employee_id,
-        Assignment.process_id == request.process_id,
-    ).first()
+    existing = (
+        db.query(Assignment)
+        .filter(
+            Assignment.employee_id == request.employee_id,
+            Assignment.process_id == request.process_id,
+        )
+        .first()
+    )
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -767,7 +800,12 @@ async def create_assignment(
     )
 
 
-@router.delete("/assignments/{assignment_id}", status_code=status.HTTP_204_NO_CONTENT, response_class=Response, response_model=None)
+@router.delete(
+    "/assignments/{assignment_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+    response_model=None,
+)
 async def delete_assignment(
     assignment_id: UUID,
     db: Session = Depends(get_db),
@@ -788,6 +826,7 @@ async def delete_assignment(
 # ============================================================================
 # Holidays
 # ============================================================================
+
 
 @router.get("/holidays", response_model=list[HolidayResponse])
 async def list_holidays(
@@ -830,11 +869,15 @@ async def create_holiday(
         )
 
     # Check for duplicate
-    existing = db.query(Holiday).filter(
-        Holiday.date == request.date,
-        Holiday.scope == request.scope,
-        Holiday.brand_id == request.brand_id,
-    ).first()
+    existing = (
+        db.query(Holiday)
+        .filter(
+            Holiday.date == request.date,
+            Holiday.scope == request.scope,
+            Holiday.brand_id == request.brand_id,
+        )
+        .first()
+    )
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -861,7 +904,12 @@ async def create_holiday(
     )
 
 
-@router.delete("/holidays/{holiday_id}", status_code=status.HTTP_204_NO_CONTENT, response_class=Response, response_model=None)
+@router.delete(
+    "/holidays/{holiday_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+    response_model=None,
+)
 async def delete_holiday(
     holiday_id: UUID,
     db: Session = Depends(get_db),
@@ -882,6 +930,7 @@ async def delete_holiday(
 # ============================================================================
 # Settings
 # ============================================================================
+
 
 @router.get("/settings", response_model=SettingsResponse)
 async def get_settings(

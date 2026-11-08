@@ -87,7 +87,8 @@ class CovZeroRule(Rule):
     ) -> str:
         # Find all primary employees for this process
         primary_emps = [
-            str(a.employee_id) for a in problem.assignments
+            str(a.employee_id)
+            for a in problem.assignments
             if str(a.process_id) == str(process.id) and a.type == AssignmentType.PRIMARY
         ]
 

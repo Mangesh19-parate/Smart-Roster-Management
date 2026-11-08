@@ -1,13 +1,22 @@
 """
 Unit tests for Phase 7: Approval workflow, AI explanation fallback, and export security.
 """
+
 from datetime import date
 from unittest.mock import MagicMock
 from uuid import uuid4
 
 from app.api.routes.explain import generate_template_explanation
 from app.api.routes.rosters import _sanitize_csv_cell
-from app.db.models import ApprovalStatus, DayStatus, Employee, Roster, RosterApproval, RosterEntry, RosterStatus
+from app.db.models import (
+    ApprovalStatus,
+    DayStatus,
+    Employee,
+    Roster,
+    RosterApproval,
+    RosterEntry,
+    RosterStatus,
+)
 from app.services.engine_service import update_entry
 
 

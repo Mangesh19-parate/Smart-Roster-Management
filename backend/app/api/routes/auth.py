@@ -1,6 +1,7 @@
 """
 Auth routes: /me, /users
 """
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -30,6 +31,7 @@ async def get_me(
 
     if user.employee_id:
         from app.db.models import Employee, Pod
+
         emp = db.query(Employee).filter(Employee.id == user.employee_id).first()
         if emp:
             employee_data = {
@@ -103,6 +105,7 @@ async def create_user(
     # Validate employee_id if provided
     if request.employee_id:
         from app.db.models import Employee
+
         emp = db.query(Employee).filter(Employee.id == request.employee_id).first()
         if not emp:
             raise HTTPException(
@@ -170,6 +173,7 @@ async def update_user(
                     detail="Pod Lead must have employee_id",
                 )
             from app.db.models import Employee
+
             emp = db.query(Employee).filter(Employee.id == user.employee_id).first()
             if not emp or emp.role != EmployeeRole.LEAD:
                 raise HTTPException(
@@ -180,6 +184,7 @@ async def update_user(
 
     if request.employee_id is not None:
         from app.db.models import Employee
+
         emp = db.query(Employee).filter(Employee.id == request.employee_id).first()
         if not emp:
             raise HTTPException(

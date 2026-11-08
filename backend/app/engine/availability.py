@@ -31,11 +31,18 @@ def is_blocked(employee_id: str, d: date, blocked_days: dict[tuple[str, date], b
     return blocked_days.get((employee_id, d), False)
 
 
-def get_employee_blocked_days(employee: Employee, blocked_days: dict[tuple[str, date], bool],
-                               month_start: date, month_end: date) -> list[date]:
+def get_employee_blocked_days(
+    employee: Employee,
+    blocked_days: dict[tuple[str, date], bool],
+    month_start: date,
+    month_end: date,
+) -> list[date]:
     """Get all blocked days for an employee in the month."""
-    return [d for d in days_in_range(month_start, month_end)
-            if is_blocked(str(employee.id), d, blocked_days)]
+    return [
+        d
+        for d in days_in_range(month_start, month_end)
+        if is_blocked(str(employee.id), d, blocked_days)
+    ]
 
 
 def is_working_day(employee_id: str, d: date, entries: dict[tuple[str, date], str]) -> bool:

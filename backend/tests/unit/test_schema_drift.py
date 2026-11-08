@@ -43,18 +43,36 @@ def test_sqlalchemy_models_match_migrations() -> None:
     # Verify columns for a few critical tables
     employee_cols = {c.name for c in Base.metadata.tables["employee"].columns}
     expected_employee_cols = {
-        "id", "name", "pod_id", "role", "preferred_off_days",
-        "max_consecutive_days", "max_cover_per_day", "active",
-        "created_at", "updated_at",
+        "id",
+        "name",
+        "pod_id",
+        "role",
+        "preferred_off_days",
+        "max_consecutive_days",
+        "max_cover_per_day",
+        "active",
+        "created_at",
+        "updated_at",
     }
-    assert expected_employee_cols.issubset(employee_cols), f"Missing columns in employee: {expected_employee_cols - employee_cols}"
+    assert expected_employee_cols.issubset(employee_cols), (
+        f"Missing columns in employee: {expected_employee_cols - employee_cols}"
+    )
 
     roster_entry_cols = {c.name for c in Base.metadata.tables["roster_entry"].columns}
     expected_roster_entry_cols = {
-        "id", "roster_id", "employee_id", "date", "status",
-        "locked", "source", "created_at", "updated_at",
+        "id",
+        "roster_id",
+        "employee_id",
+        "date",
+        "status",
+        "locked",
+        "source",
+        "created_at",
+        "updated_at",
     }
-    assert expected_roster_entry_cols.issubset(roster_entry_cols), f"Missing columns in roster_entry: {expected_roster_entry_cols - roster_entry_cols}"
+    assert expected_roster_entry_cols.issubset(roster_entry_cols), (
+        f"Missing columns in roster_entry: {expected_roster_entry_cols - roster_entry_cols}"
+    )
 
     # Verify indexes exist on key tables
     employee_table = Base.metadata.tables["employee"]

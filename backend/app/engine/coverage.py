@@ -72,16 +72,27 @@ def calculate_coverage(
     }
 
 
-def get_supply_for_process(entries: list[RosterEntry], covers: list[CoverAssignment],
-                           assignments: list[Assignment], process_id: str, d: date) -> int:
+def get_supply_for_process(
+    entries: list[RosterEntry],
+    covers: list[CoverAssignment],
+    assignments: list[Assignment],
+    process_id: str,
+    d: date,
+) -> int:
     """Get total supply for a process on a date."""
     entries_by_emp_date = {(str(e.employee_id), e.date): e for e in entries}
     covers_by_emp_proc_date = {(str(c.employee_id), str(c.process_id), c.date): c for c in covers}
 
-    primary_assignments = {str(a.employee_id) for a in assignments
-                          if str(a.process_id) == process_id and a.type == AssignmentType.PRIMARY}
-    backup_assignments = {str(a.employee_id) for a in assignments
-                         if str(a.process_id) == process_id and a.type == AssignmentType.BACKUP}
+    primary_assignments = {
+        str(a.employee_id)
+        for a in assignments
+        if str(a.process_id) == process_id and a.type == AssignmentType.PRIMARY
+    }
+    backup_assignments = {
+        str(a.employee_id)
+        for a in assignments
+        if str(a.process_id) == process_id and a.type == AssignmentType.BACKUP
+    }
 
     supply = 0
     for emp_id in primary_assignments:
@@ -124,16 +135,18 @@ def get_coverage_summary(
             elif supplied == required and required > 0:
                 status = "at_minimum"
 
-            summary.append({
-                "process_id": proc_id,
-                "process_name": process.name,
-                "brand_id": str(process.brand_id),
-                "date": d.isoformat(),
-                "required": required,
-                "supplied": supplied,
-                "cover_used": cover_used,
-                "shortfall": shortfall,
-                "status": status,
-            })
+            summary.append(
+                {
+                    "process_id": proc_id,
+                    "process_name": process.name,
+                    "brand_id": str(process.brand_id),
+                    "date": d.isoformat(),
+                    "required": required,
+                    "supplied": supplied,
+                    "cover_used": cover_used,
+                    "shortfall": shortfall,
+                    "status": status,
+                }
+            )
 
     return summary

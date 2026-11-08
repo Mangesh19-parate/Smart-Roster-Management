@@ -1,6 +1,7 @@
 """
 Changes and suggestions routes: analyze, suggestions, apply
 """
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -35,6 +36,7 @@ async def analyze_change(
     # Check permissions
     if principal.role.value == "POD_LEAD":
         from app.db.models import Employee
+
         employee = db.query(Employee).filter(Employee.id == request.employee_id).first()
         if not employee or employee.pod_id != principal.pod_id:
             raise HTTPException(
@@ -44,8 +46,7 @@ async def analyze_change(
 
     # Get impact preview
     impact = get_impact_preview(
-        db, month, request.employee_id,
-        request.start_date, request.end_date
+        db, month, request.employee_id, request.start_date, request.end_date
     )
 
     # Generate suggestions for new issues
@@ -55,16 +56,18 @@ async def analyze_change(
     # Convert suggestions to response format
     suggestion_responses = []
     for s in suggestions:
-        suggestion_responses.append(SuggestionResponse(
-            id=s["id"],
-            kind=s["kind"],
-            description=s["description"],
-            fixes=[],  # Would need to convert
-            may_break=[],
-            entries_changed=s["entries_changed"],
-            fairness_delta=s["fairness_delta"],
-            actions=s["actions"],
-        ))
+        suggestion_responses.append(
+            SuggestionResponse(
+                id=s["id"],
+                kind=s["kind"],
+                description=s["description"],
+                fixes=[],  # Would need to convert
+                may_break=[],
+                entries_changed=s["entries_changed"],
+                fairness_delta=s["fairness_delta"],
+                actions=s["actions"],
+            )
+        )
 
     return ChangeAnalyzeResponse(
         impact=impact,

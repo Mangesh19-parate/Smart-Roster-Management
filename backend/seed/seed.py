@@ -2,6 +2,7 @@
 Deterministic seed script for the Smart Roster Management System.
 Creates 5 pods, 37 employees, 23 brands with processes, assignments, holidays, leaves, and demo users.
 """
+
 import os
 import sys
 from datetime import date
@@ -258,10 +259,26 @@ def seed_assignments(db: Session, employees: dict[str, UUID], processes: dict[st
     """Create assignments linking employees to processes."""
     # Single-resource brands: 1 PRIMARY each (18 brands)
     # We'll assign the first 18 agents to these
-    single_brand_processes = [k for k in processes.keys() if not any(m in k for m in ["ORION", "PHOENIX", "QUASAR", "STELLAR", "UNITY"])]
+    single_brand_processes = [
+        k
+        for k in processes.keys()
+        if not any(m in k for m in ["ORION", "PHOENIX", "QUASAR", "STELLAR", "UNITY"])
+    ]
 
-    agent_names = [k for k in employees.keys() if k not in ["Meera Patel", "Rohan Singh", "Sana Khan", "Arjun Reddy", "Priya Sharma",
-                                                             "Float One", "Float Two"]]
+    agent_names = [
+        k
+        for k in employees.keys()
+        if k
+        not in [
+            "Meera Patel",
+            "Rohan Singh",
+            "Sana Khan",
+            "Arjun Reddy",
+            "Priya Sharma",
+            "Float One",
+            "Float Two",
+        ]
+    ]
 
     # Assign 18 agents to 18 single-resource brands
     for i, proc_key in enumerate(single_brand_processes):
@@ -341,7 +358,9 @@ def seed_assignments(db: Session, employees: dict[str, UUID], processes: dict[st
 
     # Floaters as BACKUP on 365-day brands (Planted case 2 & 5)
     floaters = ["Float One", "Float Two"]
-    all_365_processes = [k for k in processes.keys() if "ALL_365" in k and proc_key_exists(db, processes[k])]
+    all_365_processes = [
+        k for k in processes.keys() if "ALL_365" in k and proc_key_exists(db, processes[k])
+    ]
     # Add floaters as backup to some 365-day brands
     for i, floater_name in enumerate(floaters):
         # Assign to first few 365-day brands as BACKUP
@@ -371,6 +390,7 @@ def seed_assignments(db: Session, employees: dict[str, UUID], processes: dict[st
 def proc_key_exists(db: Session, process_id: UUID) -> bool:
     """Check if process has calendar_mode ALL_365."""
     from app.db.models import CalendarMode, Process
+
     proc = db.get(Process, process_id)
     return proc and proc.calendar_mode == CalendarMode.ALL_365
 
@@ -434,14 +454,17 @@ def seed_settings(db: Session) -> None:
         ("weekly_rest_days", 1),
         ("max_consecutive_days", 6),
         ("week_start", "MON"),
-        ("solver_weights", {
-            "short_total": 10000,
-            "entries_changed": 50,
-            "cover_assignments": 20,
-            "pref_off_missed": 5,
-            "fairness_spread": 15,
-            "spare_coverage": 2,
-        }),
+        (
+            "solver_weights",
+            {
+                "short_total": 10000,
+                "entries_changed": 50,
+                "cover_assignments": 20,
+                "pref_off_missed": 5,
+                "fairness_spread": 15,
+                "spare_coverage": 2,
+            },
+        ),
     ]
 
     for key, value in settings_data:
@@ -475,7 +498,20 @@ def seed_demo_users(db: Session, employees: dict[str, UUID]) -> None:
     db.add(pod_lead_user)
 
     # Employee user (linked to a sole-resource agent - first agent)
-    agent_names = [k for k in employees.keys() if k not in ["Meera Patel", "Rohan Singh", "Sana Khan", "Arjun Reddy", "Priya Sharma", "Float One", "Float Two"]]
+    agent_names = [
+        k
+        for k in employees.keys()
+        if k
+        not in [
+            "Meera Patel",
+            "Rohan Singh",
+            "Sana Khan",
+            "Arjun Reddy",
+            "Priya Sharma",
+            "Float One",
+            "Float Two",
+        ]
+    ]
     demo_employee_name = agent_names[0] if agent_names else "Amit Kumar"
     employee_user = AppUser(
         id=uuid4(),

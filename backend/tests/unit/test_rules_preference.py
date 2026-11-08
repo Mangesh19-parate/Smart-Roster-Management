@@ -154,7 +154,11 @@ def test_fairness_spread_warning() -> None:
         processes=[],
         coverage_overrides=[],
         assignments=[],
-        holidays=[Holiday(date=date(2026, 12, 25), name="Christmas", scope=HolidayScope.COMPANY, brand_id=None)],
+        holidays=[
+            Holiday(
+                date=date(2026, 12, 25), name="Christmas", scope=HolidayScope.COMPANY, brand_id=None
+            )
+        ],
         leaves=[],
         settings={},
     )
@@ -222,7 +226,11 @@ def test_fairness_spread_ok_when_balanced() -> None:
         processes=[],
         coverage_overrides=[],
         assignments=[],
-        holidays=[Holiday(date=date(2026, 12, 25), name="Christmas", scope=HolidayScope.COMPANY, brand_id=None)],
+        holidays=[
+            Holiday(
+                date=date(2026, 12, 25), name="Christmas", scope=HolidayScope.COMPANY, brand_id=None
+            )
+        ],
         leaves=[],
         settings={},
     )
@@ -297,6 +305,7 @@ def test_pod_off_cluster_warning() -> None:
     )
 
     from app.engine.types import Pod
+
     pod = Pod(id=pod_id, name="Test Pod", lead_employee_id=None)
 
     problem = Problem(
@@ -387,6 +396,7 @@ def test_pod_off_cluster_ok_when_balanced() -> None:
     )
 
     from app.engine.types import Pod
+
     pod = Pod(id=pod_id, name="Test Pod", lead_employee_id=None)
 
     problem = Problem(

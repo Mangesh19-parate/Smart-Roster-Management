@@ -1,12 +1,12 @@
-import pytest
-from uuid import uuid4
 from unittest.mock import MagicMock
-from fastapi.testclient import TestClient
+from uuid import uuid4
 
-from app.main import app
-from app.db.session import get_db
+import pytest
 from app.core.security import Principal, get_current_principal_dep
 from app.db.models import UserRole
+from app.db.session import get_db
+from app.main import app
+from fastapi.testclient import TestClient
 
 # ponytail: mock db session globally for API matrix tests
 mock_db = MagicMock()
@@ -37,7 +37,9 @@ class TestRoleMatrixAndAuth:
         app.dependency_overrides[get_current_principal_dep] = lambda: make_principal(role)
 
         # 1. Roster generate
-        res = client.post("/api/v1/rosters/2025-03/generate", json={"keep_locked": False, "time_limit_s": 5})
+        res = client.post(
+            "/api/v1/rosters/2025-03/generate", json={"keep_locked": False, "time_limit_s": 5}
+        )
         assert res.status_code == 403
         assert "Manager role required" in res.json()["detail"]
 
@@ -52,13 +54,17 @@ class TestRoleMatrixAndAuth:
         assert "Manager role required" in res.json()["detail"]
 
         # 4. Config employee creation
-        res = client.post("/api/v1/employees", json={"name": "New Agent", "role": "AGENT", "pod_id": str(uuid4())})
+        res = client.post(
+            "/api/v1/employees", json={"name": "New Agent", "role": "AGENT", "pod_id": str(uuid4())}
+        )
         assert res.status_code == 403
         assert "Manager role required" in res.json()["detail"]
 
     def test_pod_lead_endpoints_forbidden_for_employee(self):
         """Endpoints requiring POD_LEAD_OR_MANAGER must return 403 for EMPLOYEE."""
-        app.dependency_overrides[get_current_principal_dep] = lambda: make_principal(UserRole.EMPLOYEE)
+        app.dependency_overrides[get_current_principal_dep] = lambda: make_principal(
+            UserRole.EMPLOYEE
+        )
 
         # Fairness endpoint requires Pod Lead or Manager
         res = client.get("/api/v1/rosters/2025-03/fairness")
@@ -84,7 +90,9 @@ class TestRoleMatrixAndAuth:
     def test_validation_errors(self, url, method, body):
         """Invalid schemas must return 422 Unprocessable Entity."""
         # Authenticate as Manager so auth passes and Pydantic validation executes
-        app.dependency_overrides[get_current_principal_dep] = lambda: make_principal(UserRole.MANAGER)
+        app.dependency_overrides[get_current_principal_dep] = lambda: make_principal(
+            UserRole.MANAGER
+        )
 
         if method == "post":
             res = client.post(url, json=body)

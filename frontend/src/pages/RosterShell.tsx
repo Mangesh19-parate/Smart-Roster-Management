@@ -17,6 +17,8 @@ import { useDebounce } from '../hooks/useDebounce';
 import { format } from 'date-fns';
 import { Config } from './Config';
 import { StructuralReport } from './StructuralReport';
+import { FairnessReport } from './FairnessReport';
+import { RegeneratePreviewModal } from '../components/RegeneratePreviewModal';
 import { LeaveDialog } from '../components/LeaveDialog';
 import { ApprovalsDialog } from '../components/ApprovalsDialog';
 
@@ -41,6 +43,9 @@ export function RosterShell() {
   const [serverWaking, setServerWaking] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
   const [showStructuralReport, setShowStructuralReport] = useState(false);
+  const [showFairnessReport, setShowFairnessReport] = useState(false);
+  const [showRegeneratePreview, setShowRegeneratePreview] = useState(false);
+  const [regenerateDiff, setRegenerateDiff] = useState<any | null>(null);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const [showApprovals, setShowApprovals] = useState(false);
 
@@ -147,15 +152,26 @@ export function RosterShell() {
     onError: (err: any) => alert(`Apply failed: ${err.message}`),
   });
 
+  // Regenerate preview mutation (S11)
+  const regeneratePreviewMutation = useMutation({
+    mutationFn: () => rosterApi.regenerate(month, { mode: 'MINIMAL_CHANGE', save: false }),
+    onSuccess: (data: any) => {
+      setRegenerateDiff(data);
+      setShowRegeneratePreview(true);
+    },
+    onError: (err: any) => alert(`Regenerate preview failed: ${err.message}`),
+  });
+
   // Toolbar actions
   const handleGenerate = () => generateMutation.mutate();
-  const handleRegenerateMinimal = () => regenerateMutation.mutate('MINIMAL_CHANGE');
+  const handleRegenerateMinimal = () => regeneratePreviewMutation.mutate();
   const handleRegenerateFull = () => regenerateMutation.mutate('FULL');
   const handleValidate = () => validateMutation.mutate();
 
   // Dialog handlers
   const handleOpenConfig = () => setShowConfig(true);
   const handleOpenStructuralReport = () => setShowStructuralReport(true);
+  const handleOpenFairnessReport = () => setShowFairnessReport(true);
   const handleOpenLeaveDialog = () => setShowLeaveDialog(true);
   const handleOpenApprovals = () => setShowApprovals(true);
 
@@ -194,6 +210,7 @@ export function RosterShell() {
         userRole={session?.user?.app_metadata?.role || 'EMPLOYEE'}
         onOpenConfig={handleOpenConfig}
         onOpenStructuralReport={handleOpenStructuralReport}
+        onOpenFairnessReport={handleOpenFairnessReport}
         onOpenLeaveDialog={handleOpenLeaveDialog}
         onOpenApprovals={handleOpenApprovals}
       />
@@ -306,13 +323,42 @@ export function RosterShell() {
 
       {/* Config Modal */}
       {showConfig && (
-        <Config onClose={() => setShowConfig(false)} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden">
+            <Config onClose={() => setShowConfig(false)} />
+          </div>
+        </div>
       )}
 
       {/* Structural Report Modal */}
       {showStructuralReport && (
-        <StructuralReport month={month} onClose={() => setShowStructuralReport(false)} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden">
+            <StructuralReport month={month} onClose={() => setShowStructuralReport(false)} />
+          </div>
+        </div>
       )}
+
+      {/* Fairness Report Modal (S12, T44) */}
+      {showFairnessReport && (
+        <FairnessReport month={month} onClose={() => setShowFairnessReport(false)} />
+      )}
+
+      {/* Regenerate Preview Modal (S11, T45) */}
+      <RegeneratePreviewModal
+        month={month}
+        isOpen={showRegeneratePreview}
+        onClose={() => {
+          setShowRegeneratePreview(false);
+          setRegenerateDiff(null);
+        }}
+        onAccept={() => {
+          regenerateMutation.mutate('MINIMAL_CHANGE');
+          setShowRegeneratePreview(false);
+        }}
+        isLoading={regenerateMutation.isPending}
+        diffData={regenerateDiff}
+      />
 
       {/* Leave Dialog */}
       {showLeaveDialog && (

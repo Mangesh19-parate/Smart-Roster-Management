@@ -1,5 +1,4 @@
 from collections.abc import Generator
-from contextlib import contextmanager
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -28,4 +27,5 @@ def get_db() -> Generator[Session, None, None]:
 
 def init_db() -> None:
     from app.db.models import Base
+
     Base.metadata.create_all(bind=engine)

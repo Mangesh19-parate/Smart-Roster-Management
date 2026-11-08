@@ -7,6 +7,7 @@ import { useAuth } from './hooks/useAuth';
 import { QueryProvider } from './providers/QueryProvider';
 import { Login } from './pages/Login';
 import { RosterShell } from './pages/RosterShell';
+import { Styleguide } from './pages/Styleguide';
 import './index.css';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -34,6 +35,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/styleguide" element={<Styleguide />} />
       <Route
         path="/*"
         element={

@@ -4,6 +4,7 @@ Engine service: bridges SQLAlchemy models and the pure Python engine.
 This module converts DB models to engine Problem, runs solver/validator,
 and converts results back to DB models.
 """
+
 from __future__ import annotations
 
 from datetime import date, datetime
@@ -15,9 +16,9 @@ from sqlalchemy.orm import Session
 
 from app.api.schemas import ImpactResponse
 from app.db.models import (
+    ApprovalStatus,
     Assignment,
     AssignmentType,
-    ApprovalStatus,
     Brand,
     CalendarMode,
     CoverageOverride,
@@ -92,6 +93,7 @@ def _month_to_dates(month: str) -> tuple[date, date]:
     """Convert YYYY-MM string to (month_start, month_end)."""
     year, month_num = map(int, month.split("-"))
     from calendar import monthrange
+
     _, last_day = monthrange(year, month_num)
     return date(year, month_num, 1), date(year, month_num, last_day)
 
@@ -153,7 +155,9 @@ def build_problem(
 
     # Get brands and processes
     # First get process IDs from assignments of these employees
-    proc_ids = db.query(Assignment.process_id).filter(Assignment.employee_id.in_(emp_ids)).distinct().all()
+    proc_ids = (
+        db.query(Assignment.process_id).filter(Assignment.employee_id.in_(emp_ids)).distinct().all()
+    )
     proc_ids = [p[0] for p in proc_ids]
 
     processes = db.query(Process).filter(Process.id.in_(proc_ids)).all() if proc_ids else []
@@ -188,9 +192,11 @@ def build_problem(
     ]
 
     # Coverage overrides
-    override_query = db.query(CoverageOverride).filter(
-        CoverageOverride.process_id.in_(proc_ids)
-    ) if proc_ids else db.query(CoverageOverride).filter(False)
+    override_query = (
+        db.query(CoverageOverride).filter(CoverageOverride.process_id.in_(proc_ids))
+        if proc_ids
+        else db.query(CoverageOverride).filter(False)
+    )
     overrides = override_query.all()
     engine_overrides = [
         EngineProcess(  # Using Process as placeholder
@@ -204,6 +210,7 @@ def build_problem(
     ]
     # Actually build proper CoverageOverride engine types
     from app.engine.types import CoverageOverride as EngineCoverageOverride
+
     engine_overrides = [
         EngineCoverageOverride(
             process_id=o.process_id,
@@ -227,9 +234,9 @@ def build_problem(
     ]
 
     # Holidays in month
-    holidays = db.query(Holiday).filter(
-        and_(Holiday.date >= month_start, Holiday.date <= month_end)
-    ).all()
+    holidays = (
+        db.query(Holiday).filter(and_(Holiday.date >= month_start, Holiday.date <= month_end)).all()
+    )
     engine_holidays = [
         EngineHoliday(
             date=h.date,
@@ -305,12 +312,16 @@ def get_existing_roster_entries(
     if not roster:
         return []
 
-    entries = db.query(DBRosterEntry).filter(
-        and_(
-            DBRosterEntry.roster_id == roster.id,
-            DBRosterEntry.employee_id.in_(emp_ids),
+    entries = (
+        db.query(DBRosterEntry)
+        .filter(
+            and_(
+                DBRosterEntry.roster_id == roster.id,
+                DBRosterEntry.employee_id.in_(emp_ids),
+            )
         )
-    ).all()
+        .all()
+    )
 
     return [
         EngineRosterEntry(
@@ -335,12 +346,16 @@ def get_existing_covers(
     if not roster:
         return []
 
-    covers = db.query(DBCoverAssignment).filter(
-        and_(
-            DBCoverAssignment.roster_id == roster.id,
-            DBCoverAssignment.employee_id.in_(emp_ids),
+    covers = (
+        db.query(DBCoverAssignment)
+        .filter(
+            and_(
+                DBCoverAssignment.roster_id == roster.id,
+                DBCoverAssignment.employee_id.in_(emp_ids),
+            )
         )
-    ).all()
+        .all()
+    )
 
     return [
         EngineCoverAssignment(
@@ -389,17 +404,19 @@ def validate_roster_entries(
     problem = build_problem(db, month)
 
     # Build full validator with all rules
-    validator = Validator([
-        CovZeroRule(),
-        CovBelowMinRule(),
-        WOMissingRule(),
-        ConsecMaxRule(),
-        CapacityExceededRule(),
-        CompOffUnusedRule(),
-        PrefOffMissedRule(),
-        FairnessSpreadRule(),
-        PodOffClusterRule(),
-    ])
+    validator = Validator(
+        [
+            CovZeroRule(),
+            CovBelowMinRule(),
+            WOMissingRule(),
+            ConsecMaxRule(),
+            CapacityExceededRule(),
+            CompOffUnusedRule(),
+            PrefOffMissedRule(),
+            FairnessSpreadRule(),
+            PodOffClusterRule(),
+        ]
+    )
 
     return validator.validate(problem, entries, covers)
 
@@ -474,18 +491,21 @@ def get_roster_with_issues(
 
     # Build problem with view filtering
     problem = build_problem(
-        db, month, view, view_id,
-        principal_pod_id, principal_employee_id, principal_role
+        db, month, view, view_id, principal_pod_id, principal_employee_id, principal_role
     )
 
     # Get entries
     emp_ids = [e.id for e in problem.employees]
-    entries = db.query(DBRosterEntry).filter(
-        and_(
-            DBRosterEntry.roster_id == roster.id,
-            DBRosterEntry.employee_id.in_(emp_ids),
+    entries = (
+        db.query(DBRosterEntry)
+        .filter(
+            and_(
+                DBRosterEntry.roster_id == roster.id,
+                DBRosterEntry.employee_id.in_(emp_ids),
+            )
         )
-    ).all()
+        .all()
+    )
 
     engine_entries = [
         EngineRosterEntry(
@@ -499,12 +519,16 @@ def get_roster_with_issues(
     ]
 
     # Get covers
-    covers = db.query(DBCoverAssignment).filter(
-        and_(
-            DBCoverAssignment.roster_id == roster.id,
-            DBCoverAssignment.employee_id.in_(emp_ids),
+    covers = (
+        db.query(DBCoverAssignment)
+        .filter(
+            and_(
+                DBCoverAssignment.roster_id == roster.id,
+                DBCoverAssignment.employee_id.in_(emp_ids),
+            )
         )
-    ).all()
+        .all()
+    )
 
     engine_covers = [
         EngineCoverAssignment(
@@ -555,13 +579,17 @@ def update_entry(
     if roster.status == RosterStatus.PUBLISHED:
         raise ValueError("Cannot edit published roster; use /amend")
 
-    entry = db.query(DBRosterEntry).filter(
-        and_(
-            DBRosterEntry.roster_id == roster.id,
-            DBRosterEntry.employee_id == employee_id,
-            DBRosterEntry.date == entry_date,
+    entry = (
+        db.query(DBRosterEntry)
+        .filter(
+            and_(
+                DBRosterEntry.roster_id == roster.id,
+                DBRosterEntry.employee_id == employee_id,
+                DBRosterEntry.date == entry_date,
+            )
         )
-    ).first()
+        .first()
+    )
 
     if not entry:
         raise ValueError("Entry not found")
@@ -584,12 +612,16 @@ def update_entry(
     if roster.status == RosterStatus.IN_REVIEW:
         emp = db.query(Employee).filter(Employee.id == employee_id).first()
         if emp and emp.pod_id:
-            pod_approval = db.query(RosterApproval).filter(
-                and_(
-                    RosterApproval.roster_id == roster.id,
-                    RosterApproval.pod_id == emp.pod_id,
+            pod_approval = (
+                db.query(RosterApproval)
+                .filter(
+                    and_(
+                        RosterApproval.roster_id == roster.id,
+                        RosterApproval.pod_id == emp.pod_id,
+                    )
                 )
-            ).first()
+                .first()
+            )
             if pod_approval:
                 pod_approval.status = ApprovalStatus.PENDING
                 pod_approval.comment = None
@@ -666,38 +698,50 @@ def add_cover(
         raise ValueError("Roster not found")
 
     # Check if employee is working on that date
-    entry = db.query(DBRosterEntry).filter(
-        and_(
-            DBRosterEntry.roster_id == roster.id,
-            DBRosterEntry.employee_id == employee_id,
-            DBRosterEntry.date == date,
+    entry = (
+        db.query(DBRosterEntry)
+        .filter(
+            and_(
+                DBRosterEntry.roster_id == roster.id,
+                DBRosterEntry.employee_id == employee_id,
+                DBRosterEntry.date == date,
+            )
         )
-    ).first()
+        .first()
+    )
 
     if not entry or entry.status != DayStatus.WORK:
         raise ValueError("Employee must be working on that date to cover")
 
     # Check if cover already exists
-    existing = db.query(DBCoverAssignment).filter(
-        and_(
-            DBCoverAssignment.roster_id == roster.id,
-            DBCoverAssignment.employee_id == employee_id,
-            DBCoverAssignment.process_id == process_id,
-            DBCoverAssignment.date == date,
+    existing = (
+        db.query(DBCoverAssignment)
+        .filter(
+            and_(
+                DBCoverAssignment.roster_id == roster.id,
+                DBCoverAssignment.employee_id == employee_id,
+                DBCoverAssignment.process_id == process_id,
+                DBCoverAssignment.date == date,
+            )
         )
-    ).first()
+        .first()
+    )
 
     if existing:
         raise ValueError("Cover already exists")
 
     # Check capacity
-    covers_on_day = db.query(DBCoverAssignment).filter(
-        and_(
-            DBCoverAssignment.roster_id == roster.id,
-            DBCoverAssignment.employee_id == employee_id,
-            DBCoverAssignment.date == date,
+    covers_on_day = (
+        db.query(DBCoverAssignment)
+        .filter(
+            and_(
+                DBCoverAssignment.roster_id == roster.id,
+                DBCoverAssignment.employee_id == employee_id,
+                DBCoverAssignment.date == date,
+            )
         )
-    ).count()
+        .count()
+    )
 
     employee = db.query(Employee).filter(Employee.id == employee_id).first()
     if covers_on_day >= employee.max_cover_per_day:
@@ -753,12 +797,16 @@ def remove_cover(
     if not roster:
         raise ValueError("Roster not found")
 
-    cover = db.query(DBCoverAssignment).filter(
-        and_(
-            DBCoverAssignment.roster_id == roster.id,
-            DBCoverAssignment.id == cover_id,
+    cover = (
+        db.query(DBCoverAssignment)
+        .filter(
+            and_(
+                DBCoverAssignment.roster_id == roster.id,
+                DBCoverAssignment.id == cover_id,
+            )
         )
-    ).first()
+        .first()
+    )
 
     if not cover:
         return False, []
@@ -842,6 +890,7 @@ def get_impact_preview(
     # Create simulated leave
     from app.engine.types import Leave as EngineLeave
     from app.engine.types import LeaveStatus, LeaveType
+
     simulated_leave = EngineLeave(
         employee_id=employee_id,
         start_date=start_date,
@@ -885,17 +934,19 @@ def get_impact_preview(
     from app.engine.rules.preference import FairnessSpreadRule, PodOffClusterRule, PrefOffMissedRule
     from app.engine.validator import Validator
 
-    validator = Validator([
-        CovZeroRule(),
-        CovBelowMinRule(),
-        WOMissingRule(),
-        ConsecMaxRule(),
-        CapacityExceededRule(),
-        CompOffUnusedRule(),
-        PrefOffMissedRule(),
-        FairnessSpreadRule(),
-        PodOffClusterRule(),
-    ])
+    validator = Validator(
+        [
+            CovZeroRule(),
+            CovBelowMinRule(),
+            WOMissingRule(),
+            ConsecMaxRule(),
+            CapacityExceededRule(),
+            CompOffUnusedRule(),
+            PrefOffMissedRule(),
+            FairnessSpreadRule(),
+            PodOffClusterRule(),
+        ]
+    )
 
     simulated_issues = validator.validate(problem_with_leave, current_entries, current_covers)
 
@@ -999,44 +1050,55 @@ def generate_suggestions(
             if issue.process_id and issue.date:
                 # Find BACKUP assignments for this process
                 backup_assignments = [
-                    a for a in problem.assignments
-                    if str(a.process_id) == str(issue.process_id)
-                    and a.type.value == "BACKUP"
+                    a
+                    for a in problem.assignments
+                    if str(a.process_id) == str(issue.process_id) and a.type.value == "BACKUP"
                 ]
 
                 for ba in backup_assignments:
                     # Check if backup is working on that day
                     backup_entry = next(
-                        (e for e in engine_entries
-                         if e.employee_id == ba.employee_id and e.date == issue.date
-                         and e.status == DayStatus.WORK),
-                        None
+                        (
+                            e
+                            for e in engine_entries
+                            if e.employee_id == ba.employee_id
+                            and e.date == issue.date
+                            and e.status == DayStatus.WORK
+                        ),
+                        None,
                     )
                     if backup_entry:
                         # Check if already covering
                         existing_cover = next(
-                            (c for c in engine_covers
-                             if c.employee_id == ba.employee_id
-                             and c.process_id == ba.process_id
-                             and c.date == issue.date),
-                            None
+                            (
+                                c
+                                for c in engine_covers
+                                if c.employee_id == ba.employee_id
+                                and c.process_id == ba.process_id
+                                and c.date == issue.date
+                            ),
+                            None,
                         )
                         if not existing_cover:
-                            suggestions.append({
-                                "id": f"sugg_{issue.id}_cover_{ba.employee_id}",
-                                "kind": "ADD_COVER",
-                                "description": f"Add {ba.employee_id} as cover for {issue.process_id} on {issue.date}",
-                                "fixes": [issue],
-                                "may_break": [],
-                                "entries_changed": 0,
-                                "fairness_delta": 0.0,
-                                "actions": [{
-                                    "type": "ADD_COVER",
-                                    "employee_id": str(ba.employee_id),
-                                    "process_id": str(ba.process_id),
-                                    "date": issue.date.isoformat(),
-                                }],
-                            })
+                            suggestions.append(
+                                {
+                                    "id": f"sugg_{issue.id}_cover_{ba.employee_id}",
+                                    "kind": "ADD_COVER",
+                                    "description": f"Add {ba.employee_id} as cover for {issue.process_id} on {issue.date}",
+                                    "fixes": [issue],
+                                    "may_break": [],
+                                    "entries_changed": 0,
+                                    "fairness_delta": 0.0,
+                                    "actions": [
+                                        {
+                                            "type": "ADD_COVER",
+                                            "employee_id": str(ba.employee_id),
+                                            "process_id": str(ba.process_id),
+                                            "date": issue.date.isoformat(),
+                                        }
+                                    ],
+                                }
+                            )
 
         elif issue.rule.value == "WO_MISSING":
             # Suggest shifting a rest day

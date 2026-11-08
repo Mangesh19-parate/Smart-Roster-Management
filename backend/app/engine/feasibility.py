@@ -44,7 +44,8 @@ class StructNoBackupRule(Rule):
 
             # Get employee's primary processes
             primary_process_ids = [
-                str(a.process_id) for a in problem.assignments
+                str(a.process_id)
+                for a in problem.assignments
                 if str(a.employee_id) == emp_id and a.type == AssignmentType.PRIMARY
             ]
 
@@ -55,12 +56,14 @@ class StructNoBackupRule(Rule):
             backup_emps: dict[str, list[str]] = {}
             for proc_id in primary_process_ids:
                 backup_emps[proc_id] = [
-                    str(a.employee_id) for a in problem.assignments
+                    str(a.employee_id)
+                    for a in problem.assignments
                     if str(a.process_id) == proc_id and a.type == AssignmentType.BACKUP
                 ]
 
             # Check each week in the month
             from app.engine.lib.dates import monday_of_week, sunday_of_week
+
             current_monday = monday_of_week(problem.month_start)
             month_end_sunday = sunday_of_week(problem.month_end)
 
@@ -82,12 +85,15 @@ class StructNoBackupRule(Rule):
                         # Check if all primary processes are either closed or have backup available
                         all_covered = True
                         for proc_id in primary_process_ids:
-                            process = next((p for p in problem.processes if str(p.id) == proc_id), None)
+                            process = next(
+                                (p for p in problem.processes if str(p.id) == proc_id), None
+                            )
                             if not process:
                                 continue
 
                             # Check if process is closed this day
                             from app.engine.calendar import is_closed
+
                             if is_closed(process, d, problem.holidays, problem.coverage_overrides):
                                 continue
 
@@ -99,10 +105,18 @@ class StructNoBackupRule(Rule):
                                 if backup_entry and backup_entry.status == "WORK":
                                     # Check cover count
                                     cover_count = sum(
-                                        1 for c in covers.values()
+                                        1
+                                        for c in covers.values()
                                         if str(c.employee_id) == backup_emp_id and c.date == d
                                     )
-                                    backup_emp = next((e for e in problem.employees if str(e.id) == backup_emp_id), None)
+                                    backup_emp = next(
+                                        (
+                                            e
+                                            for e in problem.employees
+                                            if str(e.id) == backup_emp_id
+                                        ),
+                                        None,
+                                    )
                                     if backup_emp and cover_count < backup_emp.max_cover_per_day:
                                         backup_available = True
                                         break
@@ -163,11 +177,13 @@ class StructHeadcountRule(Rule):
         for process in problem.processes:
             # Get eligible employees (primary + backup)
             primary_emps = [
-                str(a.employee_id) for a in problem.assignments
+                str(a.employee_id)
+                for a in problem.assignments
                 if str(a.process_id) == str(process.id) and a.type == AssignmentType.PRIMARY
             ]
             backup_emps = [
-                str(a.employee_id) for a in problem.assignments
+                str(a.employee_id)
+                for a in problem.assignments
                 if str(a.process_id) == str(process.id) and a.type == AssignmentType.BACKUP
             ]
             all_eligible = set(primary_emps) | set(backup_emps)
@@ -177,6 +193,7 @@ class StructHeadcountRule(Rule):
 
             # Check each day in month
             from app.engine.calendar import get_min_coverage, is_closed
+
             for d in days_in_range(problem.month_start, problem.month_end):
                 if is_closed(process, d, problem.holidays, problem.coverage_overrides):
                     continue
@@ -229,6 +246,7 @@ class AssignMissingRule(Rule):
             # Check if process has any demand in the month
             has_demand = False
             from app.engine.calendar import is_closed
+
             for d in days_in_range(problem.month_start, problem.month_end):
                 if not is_closed(process, d, problem.holidays, problem.coverage_overrides):
                     has_demand = True
@@ -239,7 +257,8 @@ class AssignMissingRule(Rule):
 
             # Check for PRIMARY assignments
             primary_count = sum(
-                1 for a in problem.assignments
+                1
+                for a in problem.assignments
                 if str(a.process_id) == str(process.id) and a.type == AssignmentType.PRIMARY
             )
 

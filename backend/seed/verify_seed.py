@@ -2,6 +2,7 @@
 Verification script for the seed data.
 Checks that all 9 planted cases exist and 3 demo users are created.
 """
+
 import os
 import sys
 from datetime import date
@@ -37,7 +38,9 @@ def check_case_1_zenith_no_backup(db: Session) -> bool:
         print("  ❌ ZENITH brand not found")
         return False
 
-    zenith_processes = db.execute(select(Process).where(Process.brand_id == zenith.id)).scalars().all()
+    zenith_processes = (
+        db.execute(select(Process).where(Process.brand_id == zenith.id)).scalars().all()
+    )
     if not zenith_processes:
         print("  ❌ ZENITH has no processes")
         return False
@@ -48,20 +51,30 @@ def check_case_1_zenith_no_backup(db: Session) -> bool:
         return False
 
     # Check PRIMARY assignments
-    primary_assignments = db.execute(
-        select(Assignment)
-        .where(Assignment.process_id == proc.id, Assignment.type == AssignmentType.PRIMARY)
-    ).scalars().all()
+    primary_assignments = (
+        db.execute(
+            select(Assignment).where(
+                Assignment.process_id == proc.id, Assignment.type == AssignmentType.PRIMARY
+            )
+        )
+        .scalars()
+        .all()
+    )
 
     if len(primary_assignments) != 1:
         print(f"  ❌ ZENITH has {len(primary_assignments)} PRIMARY assignments, expected 1")
         return False
 
     # Check BACKUP assignments
-    backup_assignments = db.execute(
-        select(Assignment)
-        .where(Assignment.process_id == proc.id, Assignment.type == AssignmentType.BACKUP)
-    ).scalars().all()
+    backup_assignments = (
+        db.execute(
+            select(Assignment).where(
+                Assignment.process_id == proc.id, Assignment.type == AssignmentType.BACKUP
+            )
+        )
+        .scalars()
+        .all()
+    )
 
     if len(backup_assignments) > 0:
         print(f"  ❌ ZENITH has {len(backup_assignments)} BACKUP assignments, expected 0")
@@ -74,23 +87,29 @@ def check_case_1_zenith_no_backup(db: Session) -> bool:
 def check_case_2_365_with_floater_backup(db: Session) -> bool:
     """Planted case 2: A 365-day sole-resource brand WITH a floater backup."""
     # Find a 365-day brand that has a BACKUP assignment from a FLOATER
-    brands_365 = db.execute(
-        select(Brand)
-        .join(Process, Process.brand_id == Brand.id)
-        .where(Process.calendar_mode == "ALL_365")
-        .distinct()
-    ).scalars().all()
+    brands_365 = (
+        db.execute(
+            select(Brand)
+            .join(Process, Process.brand_id == Brand.id)
+            .where(Process.calendar_mode == "ALL_365")
+            .distinct()
+        )
+        .scalars()
+        .all()
+    )
 
     for brand in brands_365:
         processes = db.execute(select(Process).where(Process.brand_id == brand.id)).scalars().all()
         for proc in processes:
             primary_count = db.execute(
-                select(func.count(Assignment.id))
-                .where(Assignment.process_id == proc.id, Assignment.type == AssignmentType.PRIMARY)
+                select(func.count(Assignment.id)).where(
+                    Assignment.process_id == proc.id, Assignment.type == AssignmentType.PRIMARY
+                )
             ).scalar()
             backup_count = db.execute(
-                select(func.count(Assignment.id))
-                .where(Assignment.process_id == proc.id, Assignment.type == AssignmentType.BACKUP)
+                select(func.count(Assignment.id)).where(
+                    Assignment.process_id == proc.id, Assignment.type == AssignmentType.BACKUP
+                )
             ).scalar()
 
             if primary_count == 1 and backup_count >= 1:
@@ -98,7 +117,9 @@ def check_case_2_365_with_floater_backup(db: Session) -> bool:
                 backup_assignments = db.execute(
                     select(Assignment, Employee)
                     .join(Employee, Employee.id == Assignment.employee_id)
-                    .where(Assignment.process_id == proc.id, Assignment.type == AssignmentType.BACKUP)
+                    .where(
+                        Assignment.process_id == proc.id, Assignment.type == AssignmentType.BACKUP
+                    )
                 ).all()
 
                 for assignment, employee in backup_assignments:
@@ -135,24 +156,29 @@ def check_case_4_shared_process_override(db: Session) -> bool:
     """Planted case 4: Shared process that needs 2 people on selected weekdays."""
     from app.db.models import CoverageOverride
 
-    overrides = db.execute(
-        select(CoverageOverride)
-        .where(CoverageOverride.min_coverage == 2, CoverageOverride.weekday == 5)
-    ).scalars().all()
+    overrides = (
+        db.execute(
+            select(CoverageOverride).where(
+                CoverageOverride.min_coverage == 2, CoverageOverride.weekday == 5
+            )
+        )
+        .scalars()
+        .all()
+    )
 
     if len(overrides) < 1:
         print("  ❌ No coverage override with min_coverage=2 on Saturday found")
         return False
 
-    print(f"  ✅ Shared process override: {len(overrides)} override(s) with min_coverage=2 on Saturday")
+    print(
+        f"  ✅ Shared process override: {len(overrides)} override(s) with min_coverage=2 on Saturday"
+    )
     return True
 
 
 def check_case_5_two_floaters(db: Session) -> bool:
     """Planted case 5: Two floaters, primary on Sunday-off brands and BACKUP on 365-day brands."""
-    floaters = db.execute(
-        select(Employee).where(Employee.role == "FLOATER")
-    ).scalars().all()
+    floaters = db.execute(select(Employee).where(Employee.role == "FLOATER")).scalars().all()
 
     if len(floaters) != 2:
         print(f"  ❌ Expected 2 floaters, found {len(floaters)}")
@@ -170,9 +196,15 @@ def check_case_5_two_floaters(db: Session) -> bool:
         backup_on_all_365 = False
 
         for assignment, process in assignments:
-            if assignment.type == AssignmentType.PRIMARY and process.calendar_mode.value == "EXCL_SUN_PH":
+            if (
+                assignment.type == AssignmentType.PRIMARY
+                and process.calendar_mode.value == "EXCL_SUN_PH"
+            ):
                 primary_on_excl_sun = True
-            if assignment.type == AssignmentType.BACKUP and process.calendar_mode.value == "ALL_365":
+            if (
+                assignment.type == AssignmentType.BACKUP
+                and process.calendar_mode.value == "ALL_365"
+            ):
                 backup_on_all_365 = True
 
         if not (primary_on_excl_sun and backup_on_all_365):
@@ -187,8 +219,9 @@ def check_case_6_holidays(db: Session) -> bool:
     """Planted case 6: Brand-scoped holiday on Sunday 13 Dec 2026, company holiday on 25 Dec 2026."""
     # Company holiday on 25 Dec 2026 (Friday)
     christmas = db.execute(
-        select(Holiday)
-        .where(Holiday.date == date(2026, 12, 25), Holiday.scope == HolidayScope.COMPANY)
+        select(Holiday).where(
+            Holiday.date == date(2026, 12, 25), Holiday.scope == HolidayScope.COMPANY
+        )
     ).scalar_one_or_none()
 
     if not christmas:
@@ -197,8 +230,9 @@ def check_case_6_holidays(db: Session) -> bool:
 
     # Brand-scoped holiday on 13 Dec 2026 (Sunday)
     brand_holiday = db.execute(
-        select(Holiday)
-        .where(Holiday.date == date(2026, 12, 13), Holiday.scope == HolidayScope.BRAND)
+        select(Holiday).where(
+            Holiday.date == date(2026, 12, 13), Holiday.scope == HolidayScope.BRAND
+        )
     ).scalar_one_or_none()
 
     if not brand_holiday:
@@ -220,16 +254,23 @@ def check_case_7_overlapping_primary(db: Session) -> bool:
         print("  ❌ ZENITH brand not found")
         return False
 
-    zenith_processes = db.execute(select(Process).where(Process.brand_id == zenith.id)).scalars().all()
+    zenith_processes = (
+        db.execute(select(Process).where(Process.brand_id == zenith.id)).scalars().all()
+    )
     if not zenith_processes:
         print("  ❌ ZENITH has no processes")
         return False
 
     proc = zenith_processes[0]
-    primary_assignments = db.execute(
-        select(Assignment)
-        .where(Assignment.process_id == proc.id, Assignment.type == AssignmentType.PRIMARY)
-    ).scalars().all()
+    primary_assignments = (
+        db.execute(
+            select(Assignment).where(
+                Assignment.process_id == proc.id, Assignment.type == AssignmentType.PRIMARY
+            )
+        )
+        .scalars()
+        .all()
+    )
 
     if len(primary_assignments) != 2:
         print(f"  ❌ ZENITH has {len(primary_assignments)} PRIMARY assignments, expected 2")
@@ -241,9 +282,7 @@ def check_case_7_overlapping_primary(db: Session) -> bool:
 
 def check_case_8_approved_leaves(db: Session) -> bool:
     """Planted case 8: Approved leaves on non-critical days."""
-    leaves = db.execute(
-        select(Leave).where(Leave.status == LeaveStatus.APPROVED)
-    ).scalars().all()
+    leaves = db.execute(select(Leave).where(Leave.status == LeaveStatus.APPROVED)).scalars().all()
 
     if len(leaves) < 5:
         print(f"  ❌ Expected at least 5 approved leaves, found {len(leaves)}")
@@ -256,20 +295,21 @@ def check_case_8_approved_leaves(db: Session) -> bool:
 def check_case_9_sole_resource_no_leave(db: Session) -> bool:
     """Planted case 9: A sole-resource employee with no leave in the seed."""
     # Find an agent on a single-resource brand with no leave in December 2026
-    agents = db.execute(
-        select(Employee).where(Employee.role == "AGENT")
-    ).scalars().all()
+    agents = db.execute(select(Employee).where(Employee.role == "AGENT")).scalars().all()
 
     for agent in agents:
-        leaves = db.execute(
-            select(Leave)
-            .where(
-                Leave.employee_id == agent.id,
-                Leave.status == LeaveStatus.APPROVED,
-                Leave.start_date >= date(2026, 12, 1),
-                Leave.end_date <= date(2026, 12, 31),
+        leaves = (
+            db.execute(
+                select(Leave).where(
+                    Leave.employee_id == agent.id,
+                    Leave.status == LeaveStatus.APPROVED,
+                    Leave.start_date >= date(2026, 12, 1),
+                    Leave.end_date <= date(2026, 12, 31),
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         if len(leaves) == 0:
             # Check if this agent is on a single-resource brand
@@ -277,14 +317,18 @@ def check_case_9_sole_resource_no_leave(db: Session) -> bool:
                 select(Assignment, Process, Brand)
                 .join(Process, Process.id == Assignment.process_id)
                 .join(Brand, Brand.id == Process.brand_id)
-                .where(Assignment.employee_id == agent.id, Assignment.type == AssignmentType.PRIMARY)
+                .where(
+                    Assignment.employee_id == agent.id, Assignment.type == AssignmentType.PRIMARY
+                )
             ).all()
 
             single_resource = True
             for assignment, process, brand in assignments:
                 primary_count = db.execute(
-                    select(func.count(Assignment.id))
-                    .where(Assignment.process_id == process.id, Assignment.type == AssignmentType.PRIMARY)
+                    select(func.count(Assignment.id)).where(
+                        Assignment.process_id == process.id,
+                        Assignment.type == AssignmentType.PRIMARY,
+                    )
                 ).scalar()
                 if primary_count > 1:
                     single_resource = False
@@ -350,7 +394,7 @@ def main() -> int:
             except Exception as e:
                 print(f"ERROR in {name}: {e}")
 
-        print(f"\n{'='*50}")
+        print(f"\n{'=' * 50}")
         print(f"Passed: {passed}/{len(checks)}")
 
         # Also print summary counts

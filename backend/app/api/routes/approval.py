@@ -1,6 +1,7 @@
 """
 Approval and publishing routes (Tier B - optional)
 """
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -56,6 +57,7 @@ async def submit_review(
 
     # Check for ERROR issues
     from app.services.engine_service import get_roster_with_issues
+
     data = get_roster_with_issues(db, month)
     if not data:
         raise HTTPException(
@@ -73,12 +75,17 @@ async def submit_review(
 
     # Create or reset approval records for each pod
     from app.db.models import Pod
+
     pods = db.query(Pod).all()
     for pod in pods:
-        existing = db.query(RosterApproval).filter(
-            RosterApproval.roster_id == roster.id,
-            RosterApproval.pod_id == pod.id,
-        ).first()
+        existing = (
+            db.query(RosterApproval)
+            .filter(
+                RosterApproval.roster_id == roster.id,
+                RosterApproval.pod_id == pod.id,
+            )
+            .first()
+        )
         if existing:
             existing.status = ApprovalStatus.PENDING
             existing.comment = None
@@ -127,10 +134,14 @@ async def decide_approval(
             detail="Can only approve for your own pod",
         )
 
-    approval = db.query(RosterApproval).filter(
-        RosterApproval.roster_id == roster.id,
-        RosterApproval.pod_id == pod_id,
-    ).first()
+    approval = (
+        db.query(RosterApproval)
+        .filter(
+            RosterApproval.roster_id == roster.id,
+            RosterApproval.pod_id == pod_id,
+        )
+        .first()
+    )
 
     if not approval:
         raise HTTPException(
@@ -159,12 +170,14 @@ async def decide_approval(
     if request.decision == ApprovalStatus.CHANGES_REQUESTED:
         roster.status = RosterStatus.DRAFT
         # Reset all approvals to PENDING
-        db.query(RosterApproval).filter(RosterApproval.roster_id == roster.id).update({
-            RosterApproval.status: ApprovalStatus.PENDING,
-            RosterApproval.comment: None,
-            RosterApproval.decided_by: None,
-            RosterApproval.decided_at: None,
-        })
+        db.query(RosterApproval).filter(RosterApproval.roster_id == roster.id).update(
+            {
+                RosterApproval.status: ApprovalStatus.PENDING,
+                RosterApproval.comment: None,
+                RosterApproval.decided_by: None,
+                RosterApproval.decided_at: None,
+            }
+        )
 
     db.flush()
 
@@ -221,6 +234,7 @@ async def publish_roster(
 
     # Check for ERROR issues
     from app.services.engine_service import get_roster_with_issues
+
     data = get_roster_with_issues(db, month)
     issues = data["issues"]
     error_issues = [i for i in issues if i.severity.value == "ERROR"]
@@ -281,11 +295,15 @@ async def amend_roster(
     # Apply changes
     applied = []
     for change in request.changes:
-        entry = db.query(RosterEntry).filter(
-            RosterEntry.roster_id == roster.id,
-            RosterEntry.employee_id == change.employee_id,
-            RosterEntry.date == change.date,
-        ).first()
+        entry = (
+            db.query(RosterEntry)
+            .filter(
+                RosterEntry.roster_id == roster.id,
+                RosterEntry.employee_id == change.employee_id,
+                RosterEntry.date == change.date,
+            )
+            .first()
+        )
 
         if not entry:
             continue
@@ -296,11 +314,13 @@ async def amend_roster(
             entry.locked = change.locked
         entry.updated_at = datetime.utcnow()
 
-        applied.append(EntryEditResponse(
-            entry=entry,  # Simplified
-            issues=[],
-            impact=None,
-        ))
+        applied.append(
+            EntryEditResponse(
+                entry=entry,  # Simplified
+                issues=[],
+                impact=None,
+            )
+        )
 
         # Log change
         change_log = ChangeLog(
@@ -318,6 +338,7 @@ async def amend_roster(
 
     # Re-validate
     from app.services.engine_service import get_roster_with_issues
+
     data = get_roster_with_issues(db, month)
     issues = data["issues"]
 

@@ -32,6 +32,7 @@ from app.engine.types import (
 @dataclass(frozen=True)
 class SolverConfig:
     """Solver configuration."""
+
     max_time_seconds: float = 15.0
     num_workers: int = 1
     random_seed: int = 42
@@ -68,6 +69,7 @@ class RosterSolver:
         while d <= self.problem.month_end:
             dates.append(d)
             from datetime import timedelta
+
             d += timedelta(days=1)
         return dates
 
@@ -78,9 +80,7 @@ class RosterSolver:
     ) -> None:
         """Set previous roster for minimal-change mode."""
         self._prev_entries = {(str(e.employee_id), e.date): e for e in entries}
-        self._prev_covers = {
-            (str(c.employee_id), str(c.process_id), c.date): c for c in covers
-        }
+        self._prev_covers = {(str(c.employee_id), str(c.process_id), c.date): c for c in covers}
 
     def build(self) -> None:
         """Build the complete CP-SAT model."""
@@ -118,9 +118,7 @@ class RosterSolver:
         for (proc_id, d), req in demand_grid.items():
             if req > 0:
                 var_name = f"shortfall_{proc_id}_{d.isoformat()}"
-                self._shortfall[(proc_id, d)] = self.model.NewIntVar(
-                    0, req, var_name
-                )
+                self._shortfall[(proc_id, d)] = self.model.NewIntVar(0, req, var_name)
 
     def _add_hard_constraints(self) -> None:
         """Add all hard constraints."""
@@ -145,7 +143,8 @@ class RosterSolver:
         for emp_id in self._emp_ids:
             # Get primary processes for this employee
             primary_procs = [
-                str(a.process_id) for a in self.problem.assignments
+                str(a.process_id)
+                for a in self.problem.assignments
                 if str(a.employee_id) == emp_id and a.type == AssignmentType.PRIMARY
             ]
             if not primary_procs:
@@ -172,11 +171,9 @@ class RosterSolver:
         max_consec = self.problem.settings.get("max_consecutive_days", 6)
         for emp_id in self._emp_ids:
             for i in range(len(self._dates) - max_consec):
-                window = self._dates[i:i + max_consec + 1]
+                window = self._dates[i : i + max_consec + 1]
                 # Sum of work in any window of (max_consec + 1) days <= max_consec
-                self.model.Add(
-                    sum(self._work[(emp_id, d)] for d in window) <= max_consec
-                )
+                self.model.Add(sum(self._work[(emp_id, d)] for d in window) <= max_consec)
 
     def _add_weekly_rest_days(self) -> None:
         """At least weekly_rest_days rest days per Mon-Sun week."""
@@ -189,16 +186,15 @@ class RosterSolver:
         while current_monday <= month_end_sunday:
             week_end = sunday_of_week(current_monday)
             week_dates = [
-                d for d in days_in_range(current_monday, week_end)
+                d
+                for d in days_in_range(current_monday, week_end)
                 if self.problem.month_start <= d <= self.problem.month_end
             ]
             if len(week_dates) >= 4:
                 for emp_id in self._emp_ids:
                     # Rest days = days in week - work days
                     work_vars = [self._work[(emp_id, d)] for d in week_dates]
-                    self.model.Add(
-                        sum(work_vars) <= len(week_dates) - weekly_rest
-                    )
+                    self.model.Add(sum(work_vars) <= len(week_dates) - weekly_rest)
             current_monday = week_end + __import__("datetime").timedelta(days=1)
 
     def _add_cover_capacity(self) -> None:
@@ -303,9 +299,7 @@ class RosterSolver:
             for pref_day in emp.preferred_off_days:
                 for d in self._dates:
                     if d.weekday() == pref_day and (emp_id, d) in self._work:
-                        objective_terms.append(
-                            self._work[(emp_id, d)] * pref_off_missed_w
-                        )
+                        objective_terms.append(self._work[(emp_id, d)] * pref_off_missed_w)
 
         # 5. Fairness spread penalty (simplified - penalize Sunday/holiday work variance)
         # This is approximated by penalizing Sunday/holiday work
@@ -316,14 +310,11 @@ class RosterSolver:
             for d in self._dates:
                 is_sunday = d.weekday() == 6
                 is_ph = any(
-                    h.date == d and h.scope.value == "COMPANY"
-                    for h in self.problem.holidays
+                    h.date == d and h.scope.value == "COMPANY" for h in self.problem.holidays
                 )
                 if is_sunday or is_ph:
                     if (emp_id, d) in self._work:
-                        objective_terms.append(
-                            self._work[(emp_id, d)] * fairness_spread_w
-                        )
+                        objective_terms.append(self._work[(emp_id, d)] * fairness_spread_w)
 
         # 6. Spare coverage penalty (people working when not needed)
         # Only penalize if supply > required (handled via shortfall being 0)
@@ -350,13 +341,15 @@ class RosterSolver:
         for emp_id in self._emp_ids:
             for d in self._dates:
                 if self.solver.Value(self._work[(emp_id, d)]) == 1:
-                    entries.append(RosterEntry(
-                        employee_id=__import__("uuid").UUID(emp_id),
-                        date=d,
-                        status=DayStatus.WORK,
-                        locked=False,
-                        source=EntrySource.GENERATED,
-                    ))
+                    entries.append(
+                        RosterEntry(
+                            employee_id=__import__("uuid").UUID(emp_id),
+                            date=d,
+                            status=DayStatus.WORK,
+                            locked=False,
+                            source=EntrySource.GENERATED,
+                        )
+                    )
                 else:
                     # Check if WO, PH, LEAVE, COMP_OFF
                     blocked = build_blocked_days(self.problem)
@@ -389,22 +382,26 @@ class RosterSolver:
                                 ):
                                     status = DayStatus.PH
                                     break
-                    entries.append(RosterEntry(
-                        employee_id=__import__("uuid").UUID(emp_id),
-                        date=d,
-                        status=status,
-                        locked=False,
-                        source=EntrySource.GENERATED,
-                    ))
+                    entries.append(
+                        RosterEntry(
+                            employee_id=__import__("uuid").UUID(emp_id),
+                            date=d,
+                            status=status,
+                            locked=False,
+                            source=EntrySource.GENERATED,
+                        )
+                    )
 
         for (emp_id, proc_id, d), cover_var in self._cover.items():
             if self.solver.Value(cover_var) == 1:
-                covers.append(CoverAssignment(
-                    employee_id=__import__("uuid").UUID(emp_id),
-                    process_id=__import__("uuid").UUID(proc_id),
-                    date=d,
-                    source=EntrySource.GENERATED,
-                ))
+                covers.append(
+                    CoverAssignment(
+                        employee_id=__import__("uuid").UUID(emp_id),
+                        process_id=__import__("uuid").UUID(proc_id),
+                        date=d,
+                        source=EntrySource.GENERATED,
+                    )
+                )
 
         # Calculate gaps
         demand_grid = build_demand_grid(self.problem)

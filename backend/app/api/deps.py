@@ -1,6 +1,7 @@
 """
 API dependencies for Smart Roster Management.
 """
+
 from __future__ import annotations
 
 from uuid import UUID
@@ -42,6 +43,7 @@ rate_limit_default = rate_limit_dependency(120, 60)  # 120/min
 
 class PaginationParams:
     """Pagination parameters for list endpoints."""
+
     def __init__(
         self,
         limit: int = Query(default=100, ge=1, le=500),
@@ -53,6 +55,7 @@ class PaginationParams:
 
 class MonthParam:
     """Month parameter in YYYY-MM format."""
+
     def __init__(
         self,
         month: str = Query(..., pattern=r"^\d{4}-(0[1-9]|1[0-2])$"),
@@ -62,6 +65,7 @@ class MonthParam:
 
 class ViewParam:
     """View parameter for roster fetch."""
+
     def __init__(
         self,
         view: str | None = Query(default=None, pattern=r"^(company|pod|brand|process|employee)$"),
@@ -71,6 +75,7 @@ class ViewParam:
 
 class ViewIdParam:
     """View ID parameter for roster fetch (pod_id, brand_id, process_id, employee_id)."""
+
     def __init__(
         self,
         id: UUID | None = Query(default=None, alias="id"),

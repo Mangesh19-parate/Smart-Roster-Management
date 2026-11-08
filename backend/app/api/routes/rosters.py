@@ -1,6 +1,7 @@
 """
 Roster routes: generate, fetch (all views), validate, issues, entries, covers, lock, export
 """
+
 from __future__ import annotations
 
 import csv
@@ -25,15 +26,20 @@ from app.api.schemas import (
     CoverRequest,
     CoverResponse,
     DemandResponse,
+    DiffEntry,
     EntryEditRequest,
     EntryEditResponse,
     FairnessRow,
     IssueResponse,
     LockRequest,
     LockResponse,
+    RegenerateMode,
+    RosterDiff,
     RosterEntryResponse,
     RosterGenerateRequest,
     RosterGenerateResponse,
+    RosterRegenerateRequest,
+    RosterRegenerateResponse,
     RosterResponse,
     RosterValidateRequest,
     RosterValidateResponse,
@@ -209,6 +215,129 @@ async def generate_roster(
     )
 
 
+@router.post("/rosters/{month}/regenerate", response_model=RosterRegenerateResponse)
+async def regenerate_roster(
+    month: str,
+    request: RosterRegenerateRequest,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(require_manager),
+    _rate_limit=Depends(rate_limit_generate),
+) -> RosterRegenerateResponse:
+    """Regenerate a roster (minimal change or full) with diff preview (T32, S11)."""
+    existing = db.query(Roster).filter(Roster.month == month).first()
+    if existing and existing.status == RosterStatus.PUBLISHED:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot regenerate: roster is published. Use /amend to make changes.",
+        )
+
+    # Get issues before
+    issues_before_raw = get_roster_with_issues(db, month)
+    issues_before = [
+        IssueResponse(
+            id=i.id,
+            rule=i.rule,
+            severity=i.severity,
+            structural=i.structural,
+            brand_id=i.brand_id,
+            process_id=i.process_id,
+            employee_id=i.employee_id,
+            pod_id=i.pod_id,
+            date=i.date,
+            message=i.message,
+            cause=i.cause,
+            suggestion_hint=i.suggestion_hint,
+        )
+        for i in (issues_before_raw.get("issues", []) if issues_before_raw else [])
+    ]
+
+    keep_locked = request.mode == RegenerateMode.MINIMAL_CHANGE
+    result, problem = solve_roster_for_month(db, month, keep_locked=keep_locked)
+
+    # Compute diff
+    diff_entries: list[DiffEntry] = []
+    old_entries_map = {}
+    if existing:
+        for e in existing.entries:
+            old_entries_map[(e.employee_id, e.date)] = e
+
+    for new_e in result.entries:
+        old_e = old_entries_map.get((new_e.employee_id, new_e.date))
+        old_status = old_e.status.value if old_e else None
+        new_status = new_e.status.value
+        if old_status != new_status:
+            diff_entries.append(
+                DiffEntry(
+                    employee_id=new_e.employee_id,
+                    date=new_e.date,
+                    before=DayStatus(old_status) if old_status else None,
+                    after=DayStatus(new_status),
+                    locked=new_e.locked,
+                )
+            )
+
+    diff = RosterDiff(entries=diff_entries, covers=[])
+
+    # Validate new result to get issues after
+    engine_entries = [
+        EngineRosterEntry(
+            employee_id=e.employee_id,
+            date=e.date,
+            status=DayStatus(e.status.value),
+            locked=e.locked,
+            source=EntrySource.SOLVER,
+        )
+        for e in result.entries
+    ]
+    engine_covers = [
+        EngineCoverAssignment(
+            employee_id=c.employee_id,
+            process_id=c.process_id,
+            date=c.date,
+            source=EntrySource.SOLVER,
+        )
+        for c in result.covers
+    ]
+    validation_issues = validate_roster_entries(db, month, engine_entries, engine_covers)
+    issues_after = [
+        IssueResponse(
+            id=i.id,
+            rule=i.rule,
+            severity=i.severity,
+            structural=i.structural,
+            brand_id=i.brand_id,
+            process_id=i.process_id,
+            employee_id=i.employee_id,
+            pod_id=i.pod_id,
+            date=i.date,
+            message=i.message,
+            cause=i.cause,
+            suggestion_hint=i.suggestion_hint,
+        )
+        for i in validation_issues
+    ]
+
+    if request.save:
+        persist_roster_result(db, month, result, problem, principal.user_id)
+        db.commit()
+
+    stats = RosterGenerateResponse.model_fields["stats"].annotation(
+        status=result.status,
+        objective=result.objective,
+        best_bound=result.best_bound,
+        gaps_total=result.gaps_total,
+        gaps_unresolved_by_reason=result.gaps_unresolved_by_reason,
+        solve_ms=result.solve_ms,
+    )
+
+    return RosterRegenerateResponse(
+        diff=diff,
+        issues_before=issues_before,
+        issues_after=issues_after,
+        stats=stats,
+    )
+
+
 @router.get("/rosters/{month}", response_model=RosterResponse)
 async def get_roster(
     month: str,
@@ -219,8 +348,7 @@ async def get_roster(
 ) -> RosterResponse:
     """Fetch roster with entries, covers, demand, coverage, and issues."""
     data = get_roster_with_issues(
-        db, month, view, id,
-        principal.role.value, principal.pod_id, principal.employee_id
+        db, month, view, id, principal.role.value, principal.pod_id, principal.employee_id
     )
 
     if not data:
@@ -286,9 +414,11 @@ async def get_roster(
                 supplied=coverage["supply"].get((proc_id, d), 0),
                 cover_used=coverage["cover_used"].get((proc_id, d), 0),
                 shortfall=coverage["shortfalls"].get((proc_id, d), 0),
-                status="fully_covered" if coverage["shortfalls"].get((proc_id, d), 0) == 0 else
-                       "gap" if coverage["supply"].get((proc_id, d), 0) == 0 else
-                       "at_minimum",
+                status="fully_covered"
+                if coverage["shortfalls"].get((proc_id, d), 0) == 0
+                else "gap"
+                if coverage["supply"].get((proc_id, d), 0) == 0
+                else "at_minimum",
             )
             for (proc_id, d) in demand.keys()
         ],
@@ -395,7 +525,8 @@ async def list_issues(
 ) -> list[IssueResponse]:
     """List issues for a roster with filters."""
     data = get_roster_with_issues(
-        db, month,
+        db,
+        month,
         principal_pod_id=principal.pod_id,
         principal_employee_id=principal.employee_id,
         principal_role=principal.role.value,
@@ -455,8 +586,7 @@ async def edit_entry(
 
     try:
         entry, issues, impact = update_entry(
-            db, month, request.employee_id, request.date,
-            request.status, request.locked
+            db, month, request.employee_id, request.date, request.status, request.locked
         )
         db.commit()
     except ValueError as e:
@@ -523,9 +653,7 @@ async def add_cover_endpoint(
                 detail="Can only add covers for your pod",
             )
 
-    cover, issues = add_cover(
-        db, month, request.employee_id, request.process_id, request.date
-    )
+    cover, issues = add_cover(db, month, request.employee_id, request.process_id, request.date)
     db.commit()
 
     return CoverResponse(
@@ -644,6 +772,7 @@ async def get_fairness(
 
     # Calculate fairness metrics per employee
     from collections import defaultdict
+
     work_days = defaultdict(int)
     sunday_work = defaultdict(int)
     holiday_work = defaultdict(int)
@@ -656,6 +785,7 @@ async def get_fairness(
                 sunday_work[entry.employee_id] += 1
             # Check holidays
             from app.db.models import Holiday
+
             holiday = db.query(Holiday).filter(Holiday.date == entry.date).first()
             if holiday:
                 holiday_work[entry.employee_id] += 1
@@ -676,16 +806,18 @@ async def get_fairness(
         emp = db.query(Employee).filter(Employee.id == emp_id).first()
         if emp:
             pod = db.query(Pod).filter(Pod.id == emp.pod_id).first()
-            rows.append(FairnessRow(
-                employee_id=emp_id,
-                employee_name=emp.name,
-                pod_name=pod.name if pod else "Unknown",
-                total_work_days=total,
-                sunday_work_days=sunday_work.get(emp_id, 0),
-                holiday_work_days=holiday_work.get(emp_id, 0),
-                preferred_off_missed=pref_off_missed.get(emp_id, 0),
-                fairness_score=0.0,  # Simplified
-            ))
+            rows.append(
+                FairnessRow(
+                    employee_id=emp_id,
+                    employee_name=emp.name,
+                    pod_name=pod.name if pod else "Unknown",
+                    total_work_days=total,
+                    sunday_work_days=sunday_work.get(emp_id, 0),
+                    holiday_work_days=holiday_work.get(emp_id, 0),
+                    preferred_off_missed=pref_off_missed.get(emp_id, 0),
+                    fairness_score=0.0,  # Simplified
+                )
+            )
 
     return rows
 
@@ -722,12 +854,14 @@ async def export_csv(
     writer.writerow(["Employee", "Date", "Status", "Locked"])
     for entry in sorted(entries, key=lambda x: (employees.get(x.employee_id, ""), x.date)):
         emp_name = employees.get(entry.employee_id, str(entry.employee_id))
-        writer.writerow([
-            _sanitize_csv_cell(emp_name),
-            str(entry.date),
-            entry.status.value,
-            str(entry.locked),
-        ])
+        writer.writerow(
+            [
+                _sanitize_csv_cell(emp_name),
+                str(entry.date),
+                entry.status.value,
+                str(entry.locked),
+            ]
+        )
 
     return Response(
         content=output.getvalue(),
@@ -764,12 +898,14 @@ async def export_xlsx(
     ws.append(["Employee", "Date", "Status", "Locked"])
     for entry in sorted(entries, key=lambda x: (employees.get(x.employee_id, ""), x.date)):
         emp_name = employees.get(entry.employee_id, str(entry.employee_id))
-        ws.append([
-            _sanitize_csv_cell(emp_name),
-            str(entry.date),
-            entry.status.value,
-            str(entry.locked),
-        ])
+        ws.append(
+            [
+                _sanitize_csv_cell(emp_name),
+                str(entry.date),
+                entry.status.value,
+                str(entry.locked),
+            ]
+        )
 
     bio = io.BytesIO()
     wb.save(bio)

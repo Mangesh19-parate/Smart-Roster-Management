@@ -63,7 +63,9 @@ def test_demand_grid_excludes_closed_days() -> None:
         min_coverage=1,
     )
 
-    christmas = Holiday(date=date(2026, 12, 25), name="Christmas", scope=HolidayScope.COMPANY, brand_id=None)
+    christmas = Holiday(
+        date=date(2026, 12, 25), name="Christmas", scope=HolidayScope.COMPANY, brand_id=None
+    )
 
     problem = Problem(
         month_start=date(2026, 12, 1),
@@ -89,7 +91,13 @@ def test_demand_grid_excludes_closed_days() -> None:
     assert len(demand) == 26
 
     # Verify specific closed days not in demand
-    for d in [date(2026, 12, 6), date(2026, 12, 13), date(2026, 12, 20), date(2026, 12, 25), date(2026, 12, 27)]:
+    for d in [
+        date(2026, 12, 6),
+        date(2026, 12, 13),
+        date(2026, 12, 20),
+        date(2026, 12, 25),
+        date(2026, 12, 27),
+    ]:
         assert (str(proc_id), d) not in demand
 
 

@@ -1,6 +1,7 @@
 """
 Leaves routes: CRUD + impact preview
 """
+
 from __future__ import annotations
 
 from datetime import date
@@ -42,6 +43,7 @@ async def list_leaves(
     elif principal.role == UserRole.POD_LEAD and principal.pod_id:
         # Filter to employees in this pod
         from app.db.models import Employee as DBEmployee
+
         emp_ids = db.query(DBEmployee.id).filter(DBEmployee.pod_id == principal.pod_id).subquery()
         query = query.filter(Leave.employee_id.in_(emp_ids))
     elif employee_id:
@@ -50,12 +52,11 @@ async def list_leaves(
     if month:
         year, month_num = map(int, month.split("-"))
         from calendar import monthrange
+
         _, last_day = monthrange(year, month_num)
         start = date(year, month_num, 1)
         end = date(year, month_num, last_day)
-        query = query.filter(
-            and_(Leave.start_date <= end, Leave.end_date >= start)
-        )
+        query = query.filter(and_(Leave.start_date <= end, Leave.end_date >= start))
 
     leaves = query.order_by(Leave.start_date.desc()).all()
     return [

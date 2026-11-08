@@ -25,6 +25,7 @@ def required(
 ) -> int:
     """Calculate required coverage for a process on a date."""
     from app.engine.calendar import get_min_coverage, is_closed
+
     if is_closed(process, d, holidays, overrides):
         return 0
     return get_min_coverage(process, d, overrides)
