@@ -4,7 +4,7 @@ A web app for operations managers to plan, generate, validate and change monthly
 
 The roster is produced by an optimiser (OR-Tools CP-SAT) and judged by a separate, independent validator. Generation, manual edits, regeneration and suggestions all pass through the same validation, so an invalid roster cannot be produced silently.
 
-Live demo: `<ADD URL>` (use the "Continue as Manager / Pod Lead / Employee" buttons) | Demo video: `<ADD LINK>`
+Live demo: https://smart-roster-management.antideploy.app/ | Demo video: https://drive.google.com/file/d/1PlW6it_Kvsc1n4WzaTHqukPDklCZGwI8/view?usp=drive_link
 
 ## Features
 
@@ -83,12 +83,9 @@ backend/app/services/  database plus engine glue
 backend/seed/          deterministic seed and verification
 frontend/src/          React app (grid, issues, pages, auth)
 .github/workflows/     CI, keep-alive, daily demo reset
-docs/                  product and engineering docs
 ```
 
-## Docs
 
-[PRD](docs/PRD.md) | [Design](docs/DESIGN.md) | [Architecture](docs/ARCHITECTURE.md) | [Database](docs/DATABASE.md) | [API](docs/API.md) | [Auth](docs/AUTH.md) | [Plan](docs/PLAN.md) | [Setup](docs/SETUP.md) | [Features](docs/FEATURES.md) | [MCP](docs/MCP.md) | [Integrations](docs/INTEGRATIONS.md) | [Testing](docs/TESTING.md) | [Debugging](docs/DEBUGGING.md) | [Agent rules](AGENTS.md)
 
 ## Assumptions
 
