@@ -1,5 +1,6 @@
 /**
- * Structural Report Page - Shows brands/processes that cannot satisfy their own rules
+ * Structural Report Page - Airtable Inspired Diagnostics View
+ * Shows brands/processes that cannot satisfy their own rules
  */
 import { useQuery } from '@tanstack/react-query';
 import { rosterApi } from '../api/client';
@@ -34,100 +35,103 @@ export function StructuralReport({ month, onClose }: StructuralReportProps) {
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'ERROR': return 'bg-red-100 text-red-700 border-red-200';
-      case 'WARNING': return 'bg-amber-100 text-amber-700 border-amber-200';
-      default: return 'bg-slate-100 text-slate-700 border-slate-200';
+      case 'ERROR': return 'bg-[#fef2f2] text-[#aa2d00] border-[#fecaca]';
+      case 'WARNING': return 'bg-[#fff8e1] text-[#b45309] border-[#fde68a]';
+      default: return 'bg-[#f8fafc] text-[#41454d] border-[#dddddd]';
     }
   };
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between p-4 border-b border-slate-200">
+      <div className="flex items-center justify-between pb-4 border-b border-[#dddddd]">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">Structural Report</h1>
-          <p className="text-sm text-slate-500">Month: {format(new Date(`${month}-01`), 'MMMM yyyy')}</p>
+          <h1 className="text-xl font-semibold text-[#181d26] tracking-tight">Structural Diagnostics</h1>
+          <p className="text-xs text-[#41454d] mt-0.5">Month: {format(new Date(`${month}-01`), 'MMMM yyyy')}</p>
         </div>
         {onClose && (
-          <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600">
+          <button onClick={onClose} className="p-2 text-[#9297a0] hover:text-[#181d26] rounded-xl hover:bg-[#f8fafc] transition-colors">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         )}
       </div>
 
-      <div className="flex-1 overflow-auto p-4">
+      <div className="flex-1 overflow-auto pt-4">
         {isLoading ? (
           <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-600 border-t-transparent"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#181d26] border-t-transparent"></div>
           </div>
         ) : structuralIssues.length === 0 ? (
           <div className="text-center py-12">
-            <svg className="w-16 h-16 mx-auto text-green-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <h3 className="text-lg font-medium text-slate-900 mb-2">No Structural Issues</h3>
-            <p className="text-slate-500">All brands and processes have sufficient headcount and backup coverage.</p>
+            <div className="w-12 h-12 rounded-full bg-[#e8f5e9] text-[#1b5e20] border border-[#c8e6c9] flex items-center justify-center mx-auto mb-3">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-base font-semibold text-[#181d26] mb-1">No Structural Issues Detected</h3>
+            <p className="text-xs text-[#41454d]">All brands and processes have sufficient headcount and backup coverage.</p>
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
-              <h3 className="font-medium text-amber-800 mb-2">What are Structural Issues?</h3>
-              <p className="text-sm text-amber-700">
+            {/* Airtable Cream Callout Card */}
+            <div className="bg-[#f5e9d4] border border-[#dddddd] rounded-xl p-4 mb-4">
+              <h3 className="font-semibold text-sm text-[#181d26] mb-1">What are Structural Issues?</h3>
+              <p className="text-xs text-[#333840] leading-relaxed">
                 Structural issues indicate fundamental configuration problems that cannot be resolved by scheduling alone.
                 These require changes to team composition, assignments, or coverage requirements.
               </p>
             </div>
 
             {structuralIssues.map((issue: any) => (
-              <div key={issue.id} className="bg-white border border-slate-200 rounded-lg overflow-hidden">
-                <div className={`p-4 border-b border-slate-200 flex items-start justify-between ${getSeverityColor(issue.severity)}`}>
+              <div key={issue.id} className="bg-white border border-[#dddddd] rounded-xl overflow-hidden shadow-xs">
+                <div className={`p-4 border-b border-[#dddddd] flex items-start justify-between ${getSeverityColor(issue.severity)}`}>
                   <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getSeverityColor(issue.severity)}`}>
+                    <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                      <span className={`px-2.5 py-0.5 text-[10px] font-semibold rounded-full border ${getSeverityColor(issue.severity)}`}>
                         {issue.severity}
                       </span>
-                      <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-indigo-100 text-indigo-700">
+                      <span className="px-2.5 py-0.5 text-[10px] font-semibold rounded-full bg-[#f8fafc] border border-[#dddddd] text-[#181d26]">
                         {issue.rule}
                       </span>
                       {issue.brand_id && (
-                        <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-slate-100 text-slate-700">
+                        <span className="px-2.5 py-0.5 text-[10px] font-medium rounded-full bg-white border border-[#dddddd] text-[#41454d]">
                           Brand: {issue.brand_id.slice(0, 8)}...
                         </span>
                       )}
                       {issue.process_id && (
-                        <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-slate-100 text-slate-700">
+                        <span className="px-2.5 py-0.5 text-[10px] font-medium rounded-full bg-white border border-[#dddddd] text-[#41454d]">
                           Process: {issue.process_id.slice(0, 8)}...
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-slate-700">{issue.message}</p>
-                    <p className="text-xs text-slate-500 mt-1">{issue.cause}</p>
+                    <p className="text-sm font-medium text-[#181d26]">{issue.message}</p>
+                    <p className="text-xs text-[#41454d] mt-1">{issue.cause}</p>
                   </div>
                 </div>
-                <div className="p-4 bg-slate-50 border-t border-slate-200">
-                  <h4 className="font-medium text-slate-900 mb-2">Recommended Action</h4>
-                  <p className="text-sm text-slate-700">{getRecommendation(issue)}</p>
+                <div className="p-4 bg-[#f8fafc]">
+                  <h4 className="font-semibold text-xs text-[#181d26] mb-1 uppercase tracking-wider">Recommended Action</h4>
+                  <p className="text-xs text-[#333840]">{getRecommendation(issue)}</p>
                 </div>
               </div>
             ))}
 
-            <div className="mt-6 p-4 bg-slate-50 rounded-lg">
-              <h3 className="font-medium text-slate-900 mb-2">Summary</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div className="mt-6 p-4 bg-[#f8fafc] border border-[#dddddd] rounded-xl">
+              <h3 className="font-semibold text-xs text-[#181d26] uppercase tracking-wider mb-2">Summary</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
                 <div>
-                  <span className="text-slate-500">Total Structural Issues: </span>
-                  <span className="font-semibold text-slate-900">{structuralIssues.length}</span>
+                  <span className="text-[#41454d]">Total Structural Issues: </span>
+                  <span className="font-semibold text-[#181d26]">{structuralIssues.length}</span>
                 </div>
                 <div>
-                  <span className="text-slate-500">No Backup: </span>
-                  <span className="font-semibold text-slate-900">{structuralIssues.filter(i => i.rule === 'STRUCT_NO_BACKUP').length}</span>
+                  <span className="text-[#41454d]">No Backup: </span>
+                  <span className="font-semibold text-[#181d26]">{structuralIssues.filter(i => i.rule === 'STRUCT_NO_BACKUP').length}</span>
                 </div>
                 <div>
-                  <span className="text-slate-500">Insufficient Headcount: </span>
-                  <span className="font-semibold text-slate-900">{structuralIssues.filter(i => i.rule === 'STRUCT_HEADCOUNT').length}</span>
+                  <span className="text-[#41454d]">Insufficient Headcount: </span>
+                  <span className="font-semibold text-[#181d26]">{structuralIssues.filter(i => i.rule === 'STRUCT_HEADCOUNT').length}</span>
                 </div>
                 <div>
-                  <span className="text-slate-500">Missing Assignments: </span>
-                  <span className="font-semibold text-slate-900">{structuralIssues.filter(i => i.rule === 'ASSIGN_MISSING').length}</span>
+                  <span className="text-[#41454d]">Missing Assignments: </span>
+                  <span className="font-semibold text-[#181d26]">{structuralIssues.filter(i => i.rule === 'ASSIGN_MISSING').length}</span>
                 </div>
               </div>
             </div>

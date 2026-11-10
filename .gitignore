@@ -50,3 +50,6 @@ coverage
 
 # Databases
 *.db
+
+# Videos
+videos/

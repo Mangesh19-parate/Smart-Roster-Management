@@ -1,5 +1,5 @@
 /**
- * CellEditModal - Enterprise modal for updating individual roster entries
+ * CellEditModal - Airtable Inspired Modal for Updating Individual Roster Entries
  */
 import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
@@ -56,27 +56,27 @@ export function CellEditModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#181d26]/50 backdrop-blur-xs p-4 animate-in fade-in duration-150">
       <div
-        className="bg-white rounded-lg shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden flex flex-col"
+        className="bg-white rounded-xl shadow-xl border border-[#dddddd] w-full max-w-lg overflow-hidden flex flex-col"
         role="dialog"
         aria-modal="true"
         aria-labelledby="cell-edit-title"
       >
         {/* Header */}
-        <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+        <div className="px-5 py-4 border-b border-[#dddddd] flex items-center justify-between bg-[#f8fafc]">
           <div>
-            <h3 id="cell-edit-title" className="text-base font-semibold text-slate-900">
+            <h3 id="cell-edit-title" className="text-base font-semibold text-[#181d26]">
               Edit Shift Assignment
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-[#41454d] mt-0.5">
               Modify operational status and locking parameters
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 transition-colors"
+            className="p-1.5 rounded-xl text-[#9297a0] hover:text-[#181d26] hover:bg-white border border-transparent hover:border-[#dddddd] transition-colors"
             aria-label="Close modal"
           >
             <X className="w-5 h-5" />
@@ -86,27 +86,27 @@ export function CellEditModal({
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {/* Employee & Date Summary Card */}
-          <div className="bg-slate-50/80 rounded-md p-3 border border-slate-200 grid grid-cols-2 gap-3 text-sm">
+          <div className="bg-[#f8fafc] rounded-xl p-3.5 border border-[#dddddd] grid grid-cols-2 gap-3 text-sm">
             <div>
-              <span className="text-xs font-medium text-slate-500 block">Employee</span>
-              <span className="font-semibold text-slate-900">{employee.name}</span>
-              <span className="text-xs text-slate-500 block">{employee.pod ? `Pod: ${employee.pod}` : employee.role}</span>
+              <span className="text-xs font-medium text-[#41454d] block">Employee</span>
+              <span className="font-semibold text-[#181d26]">{employee.name}</span>
+              <span className="text-xs text-[#41454d] block">{employee.pod ? `Pod: ${employee.pod}` : employee.role}</span>
             </div>
             <div>
-              <span className="text-xs font-medium text-slate-500 block">Date</span>
-              <span className="font-medium text-slate-900">{formattedDate}</span>
-              <span className="text-xs text-slate-500 block">Current Status: {currentStatus}</span>
+              <span className="text-xs font-medium text-[#41454d] block">Date</span>
+              <span className="font-medium text-[#181d26]">{formattedDate}</span>
+              <span className="text-xs text-[#41454d] block">Current Status: {currentStatus}</span>
             </div>
           </div>
 
           {/* Active Issues Warning */}
           {issues.length > 0 && (
-            <div className="p-3 rounded-md bg-amber-50 border border-amber-200 space-y-1">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-800">
-                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+            <div className="p-3 rounded-xl bg-[#fff8e1] border border-[#fde68a] space-y-1">
+              <div className="flex items-center gap-1.5 text-xs font-medium text-[#b45309]">
+                <AlertTriangle className="w-4 h-4 text-[#d9a441] shrink-0" />
                 <span>{issues.length} scheduling issue(s) detected for this date:</span>
               </div>
-              <ul className="text-xs text-amber-700 list-disc list-inside space-y-0.5 pl-1">
+              <ul className="text-xs text-[#b45309] list-disc list-inside space-y-0.5 pl-1">
                 {issues.map((iss, idx) => (
                   <li key={idx} className="truncate">
                     {iss.message || iss.description || iss.rule}
@@ -118,14 +118,14 @@ export function CellEditModal({
 
           {/* Status Selection */}
           <div className="space-y-1.5">
-            <label htmlFor="shift-status" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+            <label htmlFor="shift-status" className="block text-xs font-semibold text-[#181d26] uppercase tracking-wider">
               Shift Status
             </label>
             <select
               id="shift-status"
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-md shadow-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium text-slate-800"
+              className="w-full px-3 py-2 text-sm bg-white border border-[#dddddd] rounded-xl shadow-xs focus:outline-none focus:border-[#181d26] font-medium text-[#181d26]"
             >
               {STATUS_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -136,22 +136,22 @@ export function CellEditModal({
           </div>
 
           {/* Locked Status Checkbox */}
-          <div className="p-3 rounded-md border border-slate-200 bg-slate-50/50 flex items-start gap-3">
+          <div className="p-3 rounded-xl border border-[#dddddd] bg-[#f8fafc] flex items-start gap-3">
             <div className="pt-0.5">
               <input
                 type="checkbox"
                 id="lock-entry"
                 checked={locked}
                 onChange={(e) => setLocked(e.target.checked)}
-                className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer"
+                className="w-4 h-4 text-[#181d26] border-[#dddddd] rounded focus:ring-[#181d26] cursor-pointer"
               />
             </div>
             <div className="text-xs">
-              <label htmlFor="lock-entry" className="font-semibold text-slate-800 flex items-center gap-1.5 cursor-pointer">
-                {locked ? <Lock className="w-3.5 h-3.5 text-indigo-600" /> : <Unlock className="w-3.5 h-3.5 text-slate-400" />}
+              <label htmlFor="lock-entry" className="font-medium text-[#181d26] flex items-center gap-1.5 cursor-pointer">
+                {locked ? <Lock className="w-3.5 h-3.5 text-[#181d26]" /> : <Unlock className="w-3.5 h-3.5 text-[#9297a0]" />}
                 Lock entry against regeneration
               </label>
-              <p className="text-slate-500 mt-0.5">
+              <p className="text-[#41454d] mt-0.5">
                 Preserves this specific status during automated solver regeneration.
               </p>
             </div>
@@ -159,8 +159,8 @@ export function CellEditModal({
 
           {/* Reason Input */}
           <div className="space-y-1.5">
-            <label htmlFor="edit-reason" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
-              Change Reason <span className="text-slate-400 font-normal">(Optional)</span>
+            <label htmlFor="edit-reason" className="block text-xs font-semibold text-[#181d26] uppercase tracking-wider">
+              Change Reason <span className="text-[#9297a0] font-normal">(Optional)</span>
             </label>
             <input
               id="edit-reason"
@@ -168,24 +168,24 @@ export function CellEditModal({
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="e.g. Approved shift swap with Team Lead"
-              className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-md shadow-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full px-3.5 py-2 text-sm bg-white border border-[#dddddd] rounded-xl shadow-xs focus:outline-none focus:border-[#181d26] text-[#181d26]"
             />
           </div>
 
-          {/* Modal Footer */}
-          <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-2.5">
+          {/* Modal Footer - Airtable Button Pair */}
+          <div className="pt-3 border-t border-[#dddddd] flex items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={onClose}
               disabled={isLoading}
-              className="px-3.5 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium text-[#181d26] bg-white border border-[#dddddd] rounded-xl hover:bg-[#f8fafc] hover:border-[#9297a0] transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md shadow-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 disabled:opacity-50 transition-colors"
+              className="inline-flex items-center gap-1.5 px-4.5 py-2 text-sm font-medium text-white bg-[#181d26] hover:bg-[#0d1218] rounded-xl shadow-xs disabled:opacity-50 transition-colors"
             >
               {isLoading ? (
                 <>

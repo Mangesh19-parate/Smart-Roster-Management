@@ -369,38 +369,38 @@ export function RosterShell() {
 
         {/* Main Grid or Agenda View */}
         {rosterLoading ? (
-          <div className="flex-1 flex items-center justify-center py-20 bg-white rounded-lg border border-slate-200">
+          <div className="flex-1 flex items-center justify-center py-20 bg-white rounded-xl border border-[#dddddd]">
             <div className="text-center space-y-2">
-              <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
+              <div className="w-8 h-8 border-3 border-[#181d26] border-t-transparent rounded-full animate-spin mx-auto" />
               <p className="text-xs font-semibold text-slate-600">Loading schedule matrix...</p>
             </div>
           </div>
         ) : rosterError ? (
-          <div className="py-16 text-center bg-white rounded-lg border border-red-200 p-6 space-y-3">
+          <div className="py-16 text-center bg-white rounded-xl border border-red-200 p-6 space-y-3">
             <p className="text-xs font-bold text-red-700">Failed to load roster: {rosterError.message}</p>
             <button
               onClick={() => refetchRoster()}
-              className="px-3.5 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-md hover:bg-indigo-700 shadow-2xs"
+              className="px-3.5 py-1.5 text-xs font-semibold bg-[#181d26] text-white rounded-lg hover:bg-black shadow-xs transition-colors"
             >
               Retry Connection
             </button>
           </div>
         ) : !rosterData ? (
-          <div className="py-20 text-center bg-white rounded-lg border border-slate-200 p-8 space-y-3">
-            <p className="text-sm font-semibold text-slate-700">No roster generated for {month}</p>
-            <p className="text-xs text-slate-400">Generate a new optimized schedule using the CP-SAT engine.</p>
+          <div className="py-20 text-center bg-white rounded-xl border border-[#dddddd] p-8 space-y-3">
+            <p className="text-sm font-semibold text-[#181d26]">No roster generated for {month}</p>
+            <p className="text-xs text-slate-500">Generate a new optimized schedule using the CP-SAT engine.</p>
             {canManage && (
               <button
                 onClick={() => generateMutation.mutate()}
                 disabled={generating}
-                className="px-4 py-2 text-xs font-semibold bg-indigo-600 text-white rounded-md hover:bg-indigo-700 shadow-2xs disabled:opacity-50"
+                className="px-4 py-2 text-xs font-semibold bg-[#181d26] text-white rounded-lg hover:bg-black shadow-xs disabled:opacity-50 transition-colors"
               >
                 Generate Monthly Roster
               </button>
             )}
           </div>
         ) : view === 'employee' ? (
-          <div className="flex-1 overflow-auto bg-white rounded-lg border border-slate-200 p-4">
+          <div className="flex-1 overflow-auto bg-white rounded-xl border border-[#dddddd] p-4">
             <EmployeeAgenda
               rosterData={rosterData}
               month={month}
@@ -430,7 +430,7 @@ export function RosterShell() {
             </div>
 
             {/* Coverage Strip */}
-            <div className="shrink-0 bg-white rounded-lg border border-slate-200 p-2 shadow-2xs">
+            <div className="shrink-0 bg-white rounded-xl border border-[#dddddd] p-2.5 shadow-xs">
               <CoverageStrip
                 coverage={rosterData.coverage}
                 demand={rosterData.demand}
@@ -444,7 +444,7 @@ export function RosterShell() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 antialiased">
+    <div className="min-h-screen bg-[#f8fafc] flex flex-col font-sans text-[#181d26] antialiased">
       {/* Top Bar Header */}
       <TopBar
         month={month}
@@ -505,12 +505,12 @@ export function RosterShell() {
             <button
               type="button"
               onClick={() => setIssuesPanelOpen(true)}
-              className="inline-flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-300 rounded-full shadow-md hover:bg-slate-50 transition-transform hover:scale-105"
+              className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-[#181d26] bg-white border border-[#dddddd] rounded-full shadow-sm hover:bg-[#f1f5f9] transition-all hover:scale-105"
             >
               {issues.length > 0 ? (
                 <ShieldAlert className="w-4 h-4 text-red-600" />
               ) : (
-                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                <ShieldCheck className="w-4 h-4 text-[#0a2e0e]" />
               )}
               <span>Health ({issues.length})</span>
             </button>

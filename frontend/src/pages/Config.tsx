@@ -333,10 +333,10 @@ export function Config({ onClose, initialTab = 'employees' }: ConfigProps) {
               role="tab"
               aria-selected={activeTab === tab.id}
               onClick={() => { setActiveTab(tab.id); setShowForm(null); setEditingItem(null); }}
-              className={`px-4 py-2 text-sm font-medium rounded-t-md transition-colors whitespace-nowrap ${
+              className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap ${
                 activeTab === tab.id
-                  ? 'bg-indigo-50 text-indigo-600 border-b-2 border-indigo-600 -mb-px'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  ? 'bg-[#181d26] text-white shadow-xs'
+                  : 'text-[#41454d] hover:text-[#181d26] hover:bg-[#f8fafc]'
               }`}
             >
               {tab.label}
@@ -423,8 +423,8 @@ function ConfigTable({ title, onAdd, columns, data, onEdit, onDelete, formFields
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-        <button onClick={onAdd} className="px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700">Add {title.slice(0, -1)}</button>
+        <h2 className="text-lg font-semibold text-[#181d26] tracking-tight">{title}</h2>
+        <button onClick={onAdd} className="px-3.5 py-1.5 text-xs font-medium text-white bg-[#181d26] hover:bg-[#0d1218] rounded-xl shadow-xs transition-colors">Add {title.slice(0, -1)}</button>
       </div>
 
       {showForm && (
@@ -438,28 +438,28 @@ function ConfigTable({ title, onAdd, columns, data, onEdit, onDelete, formFields
         />
       )}
 
-      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+      <div className="bg-white border border-[#dddddd] rounded-xl overflow-hidden shadow-xs">
         <table className="w-full">
-          <thead className="bg-slate-50 border-b border-slate-200">
+          <thead className="bg-[#f8fafc] border-b border-[#dddddd]">
             <tr>
-              {columns.map((col) => <th key={col.key} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">{col.header}</th>)}
-              <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
+              {columns.map((col) => <th key={col.key} className="px-4 py-3 text-left text-[11px] font-semibold text-[#41454d] uppercase tracking-wider">{col.header}</th>)}
+              <th className="px-4 py-3 text-right text-[11px] font-semibold text-[#41454d] uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200">
+          <tbody className="divide-y divide-[#dddddd]">
             {data.map((item) => (
-              <tr key={item.id} className="hover:bg-slate-50">
+              <tr key={item.id} className="hover:bg-[#f8fafc] transition-colors">
                 {columns.map((col) => (
-                  <td key={col.key} className="px-4 py-3 text-sm text-slate-700">
+                  <td key={col.key} className="px-4 py-3 text-xs text-[#181d26]">
                     {col.render ? col.render(item[col.key]) : item[col.key]}
                   </td>
                 ))}
                 <td className="px-4 py-3 text-right">
                   <div className="flex items-center justify-end gap-2">
-                    <button onClick={() => onEdit(item)} className="p-1.5 text-slate-400 hover:text-indigo-600" title="Edit">
+                    <button onClick={() => onEdit(item)} className="p-1.5 text-[#9297a0] hover:text-[#181d26] rounded-lg hover:bg-white" title="Edit">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                     </button>
-                    <button onClick={() => onDelete(item.id)} className="p-1.5 text-slate-400 hover:text-red-600" title="Delete">
+                    <button onClick={() => onDelete(item.id)} className="p-1.5 text-[#9297a0] hover:text-[#aa2d00] rounded-lg hover:bg-[#fef2f2]" title="Delete">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     </button>
                   </div>
@@ -468,7 +468,7 @@ function ConfigTable({ title, onAdd, columns, data, onEdit, onDelete, formFields
             ))}
             {data.length === 0 && (
               <tr>
-                <td colSpan={columns.length + 1} className="px-4 py-8 text-center text-slate-500">No {title.toLowerCase()} found. Click "Add {title.slice(0, -1)}" to create one.</td>
+                <td colSpan={columns.length + 1} className="px-4 py-8 text-center text-xs text-[#9297a0]">No {title.toLowerCase()} found. Click "Add {title.slice(0, -1)}" to create one.</td>
               </tr>
             )}
           </tbody>
@@ -489,34 +489,34 @@ interface FormModalProps {
 
 function FormModal({ title, fields, formData, setFormData, onSubmit, onClose }: FormModalProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="p-4 border-b border-slate-200 flex items-center justify-between">
-          <h3 className="font-semibold text-slate-900">{title}</h3>
-          <button onClick={onClose} className="p-1 text-slate-400 hover:text-slate-600"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#181d26]/50 backdrop-blur-xs">
+      <div className="bg-white rounded-xl shadow-xl border border-[#dddddd] max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="p-4 border-b border-[#dddddd] bg-[#f8fafc] flex items-center justify-between">
+          <h3 className="font-semibold text-sm text-[#181d26]">{title}</h3>
+          <button onClick={onClose} className="p-1 text-[#9297a0] hover:text-[#181d26] rounded-lg hover:bg-white"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
         </div>
-        <form onSubmit={onSubmit} className="p-4 space-y-4">
+        <form onSubmit={onSubmit} className="p-5 space-y-4">
           {fields.map((field) => (
             <div key={field.name}>
-              <label className="block text-sm font-medium text-slate-700 mb-1">{field.label}{field.required && <span className="text-red-500 ml-1">*</span>}</label>
+              <label className="block text-xs font-semibold text-[#181d26] uppercase tracking-wider mb-1">{field.label}{field.required && <span className="text-[#aa2d00] ml-1">*</span>}</label>
               {field.type === 'select' ? (
-                <select value={formData[field.name] || ''} onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" required={field.required}>
+                <select value={formData[field.name] || ''} onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })} className="w-full px-3 py-2 text-xs border border-[#dddddd] rounded-xl focus:outline-none focus:border-[#181d26] text-[#181d26]" required={field.required}>
                   <option value="">Select...</option>
                   {field.options.map((opt: any) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                 </select>
               ) : field.type === 'checkbox' ? (
                 <label className="flex items-center gap-2">
-                  <input type="checkbox" checked={formData[field.name] || false} onChange={(e) => setFormData({ ...formData, [field.name]: e.target.checked })} className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500" />
-                  <span className="text-sm text-slate-700">Active</span>
+                  <input type="checkbox" checked={formData[field.name] || false} onChange={(e) => setFormData({ ...formData, [field.name]: e.target.checked })} className="w-4 h-4 text-[#181d26] border-[#dddddd] rounded focus:ring-[#181d26]" />
+                  <span className="text-xs text-[#181d26]">Active</span>
                 </label>
               ) : (
-                <input type={field.type} value={formData[field.name] || ''} onChange={(e) => setFormData({ ...formData, [field.name]: field.type === 'number' ? parseInt(e.target.value) || 0 : e.target.value })} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" min={field.min} max={field.max} required={field.required} />
+                <input type={field.type} value={formData[field.name] || ''} onChange={(e) => setFormData({ ...formData, [field.name]: field.type === 'number' ? parseInt(e.target.value) || 0 : e.target.value })} className="w-full px-3 py-2 text-xs border border-[#dddddd] rounded-xl focus:outline-none focus:border-[#181d26] text-[#181d26]" min={field.min} max={field.max} required={field.required} />
               )}
             </div>
           ))}
-          <div className="flex gap-2 pt-4">
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 border border-slate-300 rounded-md text-slate-700 hover:bg-slate-50">Cancel</button>
-            <button type="submit" className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Save</button>
+          <div className="flex gap-2.5 pt-4 border-t border-[#dddddd]">
+            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 border border-[#dddddd] rounded-xl text-xs font-medium text-[#181d26] hover:bg-[#f8fafc] transition-colors">Cancel</button>
+            <button type="submit" className="flex-1 px-4 py-2 bg-[#181d26] text-white rounded-xl text-xs font-medium hover:bg-[#0d1218] transition-colors shadow-xs">Save</button>
           </div>
         </form>
       </div>

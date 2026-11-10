@@ -4,6 +4,14 @@
  */
 
 import { QueryClient } from '@tanstack/react-query';
+import {
+  DEMO_PODS,
+  DEMO_EMPLOYEES,
+  DEMO_BRANDS,
+  DEMO_PROCESSES,
+  DEMO_LEAVES,
+  generateDemoRoster,
+} from './demoData';
 
 const API_BASE = (import.meta as any).env?.VITE_API_URL || '/api/v1';
 
@@ -17,6 +25,130 @@ export const queryClient = new QueryClient({
   },
 });
 
+const demoRosterStore = new Map<string, any>();
+
+function getDemoRoster(month: string) {
+  if (!demoRosterStore.has(month)) {
+    demoRosterStore.set(month, generateDemoRoster(month));
+  }
+  return demoRosterStore.get(month);
+}
+
+function handleDemoFallback<T>(path: string, options: RequestInit = {}): T {
+  // Config
+  if (path.startsWith('/pods')) return DEMO_PODS as unknown as T;
+  if (path.startsWith('/employees')) return DEMO_EMPLOYEES as unknown as T;
+  if (path.startsWith('/brands')) return DEMO_BRANDS as unknown as T;
+  if (path.startsWith('/processes')) return DEMO_PROCESSES as unknown as T;
+  if (path.startsWith('/leaves')) return DEMO_LEAVES as unknown as T;
+  if (path.startsWith('/settings')) {
+    return {
+      solver_time_limit_s: 15,
+      fairness_weight: 1.0,
+      consecutive_days_max: 6,
+    } as unknown as T;
+  }
+  if (path.startsWith('/me')) {
+    const rawDemo = localStorage.getItem('demo-session');
+    const session = rawDemo ? JSON.parse(rawDemo) : null;
+    return {
+      user: session?.user || { id: 'demo-mgr', email: 'manager@demo.local', role: 'MANAGER' },
+      role: session?.user?.role || 'MANAGER',
+      employee: null,
+      pod: null,
+    } as unknown as T;
+  }
+
+  // Rosters
+  const rosterMatch = path.match(/\/rosters\/([^/?]+)/);
+  const month = (rosterMatch && rosterMatch[1]) ? rosterMatch[1] : '2026-11';
+  const roster = getDemoRoster(month);
+
+  if (path.includes('/issues')) {
+    return roster.issues as unknown as T;
+  }
+  if (path.includes('/fairness')) {
+    const rows = DEMO_EMPLOYEES.map((e, idx) => ({
+      employee_id: e.id,
+      name: e.name,
+      pod_name: e.pod.name,
+      sundays_worked: idx % 2 === 0 ? 3 : 2,
+      saturdays_worked: idx % 3 === 0 ? 2 : 1,
+      total_offs: 8,
+      preference_score: idx % 4 === 0 ? 85 : 95,
+    }));
+    return rows as unknown as T;
+  }
+  if (path.includes('/entries') && options.method === 'PATCH') {
+    try {
+      const body = JSON.parse((options.body as string) || '{}');
+      const entry = roster.entries.find(
+        (e: any) => e.employee_id === body.employee_id && e.date === body.date
+      );
+      if (entry) {
+        entry.status = body.status;
+        if (body.locked !== undefined) entry.locked = body.locked;
+      }
+    } catch {
+      // ignore
+    }
+    return { success: true } as unknown as T;
+  }
+  if (path.includes('/generate') || path.includes('/regenerate')) {
+    return {
+      roster,
+      issues: roster.issues,
+      stats: roster.stats,
+    } as unknown as T;
+  }
+
+  // Structural report
+  if (path.startsWith('/structural')) {
+    return [
+      {
+        brand: 'ZENITH',
+        issue: 'Single resource with 365-day operation and no assigned backup',
+        severity: 'CRITICAL',
+        assigned: 'Amit Kumar',
+        backup: 'None',
+        recommendation: 'Assign Floater One as designated backup',
+      },
+      {
+        brand: 'PHOENIX',
+        issue: 'Saturday demand spike requires 2 agents, only 1 primary staffed',
+        severity: 'WARNING',
+        assigned: 'Neha Gupta',
+        backup: 'Floater Two',
+        recommendation: 'Lock floater cover for Saturdays in November',
+      },
+    ] as unknown as T;
+  }
+
+  // Default Roster payload (with view filtering if requested)
+  const urlParams = new URLSearchParams(path.includes('?') ? path.split('?')[1] : '');
+  const view = urlParams.get('view');
+  const viewId = urlParams.get('id');
+
+  if (view === 'pod' && viewId) {
+    const podEmployees = DEMO_EMPLOYEES.filter(e => e.pod_id === viewId).map(e => e.id);
+    return {
+      ...roster,
+      entries: roster.entries.filter((e: any) => podEmployees.includes(e.employee_id)),
+      employees: DEMO_EMPLOYEES.filter(e => e.pod_id === viewId),
+    } as unknown as T;
+  }
+
+  if (view === 'employee' && viewId) {
+    return {
+      ...roster,
+      entries: roster.entries.filter((e: any) => e.employee_id === viewId),
+      employees: DEMO_EMPLOYEES.filter(e => e.id === viewId),
+    } as unknown as T;
+  }
+
+  return roster as unknown as T;
+}
+
 async function fetchWithAuth<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = localStorage.getItem('sb-access-token');
   const headers: HeadersInit = {
@@ -25,19 +157,43 @@ async function fetchWithAuth<T>(path: string, options: RequestInit = {}): Promis
     ...options.headers,
   };
 
-  const response = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers,
-  });
+  const isDemo = Boolean(
+    import.meta.env.VITE_DEMO_MODE === 'true' ||
+    localStorage.getItem('demo-session') ||
+    token?.startsWith('demo-token-')
+  );
+
+  let response: Response | null = null;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2000);
+    response = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers,
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+  } catch (netErr) {
+    if (isDemo) {
+      return handleDemoFallback<T>(path, options);
+    }
+    throw netErr;
+  }
 
   if (response.status === 401) {
     // Token expired or invalid
     localStorage.removeItem('sb-access-token');
-    window.location.href = '/login';
+    localStorage.removeItem('demo-session');
+    if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+      window.location.href = '/login';
+    }
     throw new Error('Unauthorized');
   }
 
   if (!response.ok) {
+    if (isDemo && (response.status === 404 || response.status >= 500)) {
+      return handleDemoFallback<T>(path, options);
+    }
     const errorBody = await response.json().catch(() => null);
     let msg = response.statusText;
     if (errorBody) {
@@ -58,7 +214,11 @@ async function fetchWithAuth<T>(path: string, options: RequestInit = {}): Promis
     return undefined as T;
   }
 
-  return response.json();
+  const json = await response.json().catch(() => null);
+  if (isDemo && !json) {
+    return handleDemoFallback<T>(path, options);
+  }
+  return json;
 }
 
 // Auth

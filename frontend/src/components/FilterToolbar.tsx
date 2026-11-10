@@ -1,5 +1,5 @@
 /**
- * FilterToolbar - Precise search, scope switcher, and status filter for Roster
+ * FilterToolbar - Airtable Inspired Precise Search, Scope Switcher, and Status Filter for Roster
  */
 import { Search, RotateCcw, Calendar, Filter } from 'lucide-react';
 
@@ -61,7 +61,7 @@ export function FilterToolbar({
         <select
           value={viewId || ''}
           onChange={(e) => onViewIdChange(e.target.value || null)}
-          className="px-2.5 py-1.5 text-xs font-medium bg-white border border-slate-300 rounded-md focus:ring-1 focus:ring-indigo-500 focus:outline-none text-slate-800"
+          className="px-3 py-1.5 text-xs font-medium bg-white border border-[#dddddd] rounded-xl focus:border-[#181d26] focus:outline-none text-[#181d26]"
           aria-label="Select Pod"
         >
           <option value="">-- Select Pod --</option>
@@ -78,7 +78,7 @@ export function FilterToolbar({
         <select
           value={viewId || ''}
           onChange={(e) => onViewIdChange(e.target.value || null)}
-          className="px-2.5 py-1.5 text-xs font-medium bg-white border border-slate-300 rounded-md focus:ring-1 focus:ring-indigo-500 focus:outline-none text-slate-800"
+          className="px-3 py-1.5 text-xs font-medium bg-white border border-[#dddddd] rounded-xl focus:border-[#181d26] focus:outline-none text-[#181d26]"
           aria-label="Select Brand"
         >
           <option value="">-- Select Brand --</option>
@@ -95,7 +95,7 @@ export function FilterToolbar({
         <select
           value={viewId || ''}
           onChange={(e) => onViewIdChange(e.target.value || null)}
-          className="px-2.5 py-1.5 text-xs font-medium bg-white border border-slate-300 rounded-md focus:ring-1 focus:ring-indigo-500 focus:outline-none text-slate-800"
+          className="px-3 py-1.5 text-xs font-medium bg-white border border-[#dddddd] rounded-xl focus:border-[#181d26] focus:outline-none text-[#181d26]"
           aria-label="Select Process"
         >
           <option value="">-- Select Process --</option>
@@ -112,7 +112,7 @@ export function FilterToolbar({
         <select
           value={viewId || ''}
           onChange={(e) => onViewIdChange(e.target.value || null)}
-          className="px-2.5 py-1.5 text-xs font-medium bg-white border border-slate-300 rounded-md focus:ring-1 focus:ring-indigo-500 focus:outline-none text-slate-800"
+          className="px-3 py-1.5 text-xs font-medium bg-white border border-[#dddddd] rounded-xl focus:border-[#181d26] focus:outline-none text-[#181d26]"
           aria-label="Select Employee"
         >
           <option value="">-- Select Employee --</option>
@@ -130,23 +130,23 @@ export function FilterToolbar({
   const isFiltered = searchQuery !== '' || view !== 'company' || viewId !== null || statusFilter !== 'ALL';
 
   return (
-    <div className="bg-white border border-slate-200 rounded-lg p-2.5 shadow-xs flex flex-wrap items-center justify-between gap-2.5">
+    <div className="bg-white border border-[#dddddd] rounded-xl p-2.5 shadow-xs flex flex-wrap items-center justify-between gap-2.5">
       {/* Left side: Search & Scope */}
       <div className="flex flex-wrap items-center gap-2 flex-1 min-w-[280px]">
-        {/* Search Input */}
+        {/* Search Input - Airtable clean input */}
         <div className="relative min-w-[180px] max-w-xs flex-1">
-          <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#9297a0] pointer-events-none" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Search employee or role..."
-            className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-md placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 text-slate-800"
+            className="w-full pl-9 pr-3 py-1.5 text-xs bg-[#f8fafc] border border-[#dddddd] rounded-xl placeholder-[#9297a0] focus:bg-white focus:outline-none focus:border-[#181d26] text-[#181d26] transition-colors"
           />
         </div>
 
-        {/* View Mode Segmented Switcher */}
-        <div className="inline-flex rounded-md p-0.5 bg-slate-100 border border-slate-200" role="tablist">
+        {/* View Mode Segmented Switcher - Airtable Pill style */}
+        <div className="inline-flex rounded-xl p-0.5 bg-[#f8fafc] border border-[#dddddd]" role="tablist">
           {VIEW_OPTIONS.map((opt) => (
             <button
               key={opt.id}
@@ -157,10 +157,10 @@ export function FilterToolbar({
               }}
               role="tab"
               aria-selected={view === opt.id}
-              className={`px-2.5 py-1 text-xs font-medium rounded transition-all ${
+              className={`px-3 py-1 text-xs rounded-lg transition-all ${
                 view === opt.id
-                  ? 'bg-white text-indigo-700 shadow-xs font-semibold'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-[#181d26] text-white shadow-xs font-medium'
+                  : 'text-[#41454d] hover:text-[#181d26]'
               }`}
             >
               {opt.label}
@@ -176,11 +176,11 @@ export function FilterToolbar({
       <div className="flex items-center gap-2">
         {/* Status Filter */}
         <div className="flex items-center gap-1.5">
-          <Filter className="w-3.5 h-3.5 text-slate-400" />
+          <Filter className="w-3.5 h-3.5 text-[#41454d]" />
           <select
             value={statusFilter}
             onChange={(e) => onStatusFilterChange(e.target.value)}
-            className="px-2 py-1.5 text-xs font-medium bg-white border border-slate-300 rounded-md focus:ring-1 focus:ring-indigo-500 focus:outline-none text-slate-700"
+            className="px-2.5 py-1.5 text-xs font-medium bg-white border border-[#dddddd] rounded-xl focus:border-[#181d26] focus:outline-none text-[#181d26]"
             aria-label="Filter by status"
           >
             {STATUS_FILTERS.map((sf) => (
@@ -195,10 +195,10 @@ export function FilterToolbar({
         <button
           type="button"
           onClick={onJumpToday}
-          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-slate-700 bg-slate-50 border border-slate-300 rounded-md hover:bg-slate-100 transition-colors"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#181d26] bg-white border border-[#dddddd] rounded-xl hover:bg-[#f8fafc] hover:border-[#9297a0] transition-colors shadow-xs"
           title="Scroll or jump to today's date"
         >
-          <Calendar className="w-3.5 h-3.5 text-slate-500" />
+          <Calendar className="w-3.5 h-3.5 text-[#41454d]" />
           <span>Today</span>
         </button>
 
@@ -207,7 +207,7 @@ export function FilterToolbar({
           <button
             type="button"
             onClick={onResetFilters}
-            className="inline-flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 rounded-md hover:bg-slate-100 transition-colors"
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-[#aa2d00] hover:text-[#0d1218] rounded-xl hover:bg-[#fef2f2] transition-colors"
             title="Reset all active filters"
           >
             <RotateCcw className="w-3.5 h-3.5" />

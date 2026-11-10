@@ -1,5 +1,5 @@
 /**
- * TopBar - Compact Enterprise Application Header
+ * TopBar - Airtable Inspired Enterprise Application Header
  * Month navigation, Roster Status, Quick Solve Actions, Export, and User Profile.
  */
 import { useState, useRef, useEffect } from 'react';
@@ -35,9 +35,9 @@ interface TopBarProps {
 }
 
 const STATUS_CONFIGS: Record<string, { bg: string; text: string; border: string; label: string }> = {
-  DRAFT: { bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-slate-300', label: 'Draft' },
-  IN_REVIEW: { bg: 'bg-amber-50', text: 'text-amber-800', border: 'border-amber-300', label: 'In Review' },
-  PUBLISHED: { bg: 'bg-emerald-50', text: 'text-emerald-800', border: 'border-emerald-300', label: 'Published' },
+  DRAFT: { bg: 'bg-[#f1f5f9]', text: 'text-[#41454d]', border: 'border-[#dddddd]', label: 'Draft' },
+  IN_REVIEW: { bg: 'bg-[#fff8e1]', text: 'text-[#b45309]', border: 'border-[#fde68a]', label: 'In Review' },
+  PUBLISHED: { bg: 'bg-[#e8f5e9]', text: 'text-[#1b5e20]', border: 'border-[#c8e6c9]', label: 'Published' },
 };
 
 export function TopBar({
@@ -87,26 +87,26 @@ export function TopBar({
   const isPodLead = userRole === 'POD_LEAD';
 
   return (
-    <header className="h-14 bg-white border-b border-slate-200 px-4 flex items-center justify-between shrink-0 z-20">
+    <header className="h-14 bg-white border-b border-[#dddddd] px-4 flex items-center justify-between shrink-0 z-20">
       {/* Left: Mobile Sidebar Toggle + Month Switcher */}
       <div className="flex items-center gap-3">
         {onToggleSidebar && (
           <button
             type="button"
             onClick={onToggleSidebar}
-            className="md:hidden p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-md"
+            className="md:hidden p-1.5 text-[#41454d] hover:text-[#181d26] hover:bg-[#f8fafc] rounded-xl transition-colors"
             aria-label="Toggle Navigation"
           >
             <Menu className="w-5 h-5" />
           </button>
         )}
 
-        {/* Month Navigator */}
-        <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-0.5" ref={monthPickerRef}>
+        {/* Month Navigator - Airtable clean button pill */}
+        <div className="flex items-center gap-1 bg-[#f8fafc] border border-[#dddddd] rounded-xl p-0.5" ref={monthPickerRef}>
           <button
             type="button"
             onClick={() => onMonthChange(prevMonth)}
-            className="p-1 rounded text-slate-500 hover:text-slate-800 hover:bg-white transition-colors"
+            className="p-1 rounded-lg text-[#41454d] hover:text-[#181d26] hover:bg-white transition-colors"
             title="Previous Month"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -115,17 +115,17 @@ export function TopBar({
           <button
             type="button"
             onClick={() => setMonthPickerOpen(!monthPickerOpen)}
-            className="px-2 py-0.5 text-xs font-semibold text-slate-800 hover:bg-white rounded transition-colors flex items-center gap-1.5"
+            className="px-2.5 py-1 text-xs font-medium text-[#181d26] hover:bg-white rounded-lg transition-colors flex items-center gap-1.5"
           >
-            <Calendar className="w-3.5 h-3.5 text-slate-500" />
+            <Calendar className="w-3.5 h-3.5 text-[#41454d]" />
             <span>{format(currentDate, 'MMMM yyyy')}</span>
-            <ChevronDown className="w-3 h-3 text-slate-400" />
+            <ChevronDown className="w-3 h-3 text-[#9297a0]" />
           </button>
 
           <button
             type="button"
             onClick={() => onMonthChange(nextMonth)}
-            className="p-1 rounded text-slate-500 hover:text-slate-800 hover:bg-white transition-colors"
+            className="p-1 rounded-lg text-[#41454d] hover:text-[#181d26] hover:bg-white transition-colors"
             title="Next Month"
           >
             <ChevronRight className="w-4 h-4" />
@@ -133,8 +133,8 @@ export function TopBar({
 
           {/* Month Picker Dropdown */}
           {monthPickerOpen && (
-            <div className="absolute top-12 left-4 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg p-2.5 z-50 min-w-[200px]">
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+            <div className="absolute top-12 left-4 mt-1 bg-white border border-[#dddddd] rounded-xl shadow-lg p-3 z-50 min-w-[210px]">
+              <label className="block text-[11px] font-semibold text-[#41454d] uppercase tracking-wider mb-1.5">
                 Select Month
               </label>
               <input
@@ -146,7 +146,7 @@ export function TopBar({
                     setMonthPickerOpen(false);
                   }
                 }}
-                className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                className="w-full px-2.5 py-1.5 text-xs border border-[#dddddd] rounded-lg focus:outline-none focus:border-[#181d26]"
               />
             </div>
           )}
@@ -154,7 +154,7 @@ export function TopBar({
 
         {/* Status Pill Badge */}
         <span
-          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}
+          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}
         >
           {statusStyle.label}
         </span>
@@ -162,8 +162,8 @@ export function TopBar({
 
       {/* Center: Server Waking Indicator */}
       {serverWaking && (
-        <div className="hidden lg:flex items-center gap-2 px-3 py-1 bg-amber-50 border border-amber-200 rounded-full text-xs text-amber-800 animate-pulse">
-          <span className="w-2 h-2 rounded-full bg-amber-500" />
+        <div className="hidden lg:flex items-center gap-2 px-3 py-1 bg-[#fff8e1] border border-[#fde68a] rounded-full text-xs text-[#b45309] animate-pulse">
+          <span className="w-2 h-2 rounded-full bg-[#d9a441]" />
           <span>Waking up engine, this may take up to 45 seconds...</span>
         </div>
       )}
@@ -175,9 +175,9 @@ export function TopBar({
           <button
             type="button"
             onClick={onOpenApprovals}
-            className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-md hover:bg-slate-50 transition-colors shadow-2xs"
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#181d26] bg-white border border-[#dddddd] rounded-xl hover:bg-[#f8fafc] hover:border-[#9297a0] transition-colors shadow-xs"
           >
-            <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />
+            <CheckCircle2 className="w-3.5 h-3.5 text-[#1b61c9]" />
             <span>Approvals</span>
           </button>
         )}
@@ -189,49 +189,49 @@ export function TopBar({
               type="button"
               disabled={disabled || generating}
               onClick={() => setRegenOpen(!regenOpen)}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-md hover:bg-slate-50 transition-colors shadow-2xs disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#181d26] bg-white border border-[#dddddd] rounded-xl hover:bg-[#f8fafc] hover:border-[#9297a0] transition-colors shadow-xs disabled:opacity-50"
             >
-              <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
+              <RefreshCw className="w-3.5 h-3.5 text-[#41454d]" />
               <span>Regenerate</span>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
+              <ChevronDown className="w-3 h-3 text-[#9297a0]" />
             </button>
             {regenOpen && (
-              <div className="absolute right-0 mt-1 w-52 bg-white border border-slate-200 rounded-md shadow-lg py-1 z-50">
+              <div className="absolute right-0 mt-1 w-56 bg-white border border-[#dddddd] rounded-xl shadow-lg py-1.5 z-50">
                 <button
                   type="button"
                   onClick={() => {
                     onRegenerateMinimal();
                     setRegenOpen(false);
                   }}
-                  className="w-full text-left px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50"
+                  className="w-full text-left px-3.5 py-2 text-xs text-[#181d26] hover:bg-[#f8fafc] transition-colors"
                 >
-                  <div className="font-semibold text-slate-800">Minimal Change Preview</div>
-                  <div className="text-[10px] text-slate-400">Only shifts needed to fix gaps</div>
+                  <div className="font-medium text-[#181d26]">Minimal Change Preview</div>
+                  <div className="text-[11px] text-[#41454d] mt-0.5">Only shifts needed to fix gaps</div>
                 </button>
-                <div className="border-t border-slate-100 my-0.5" />
+                <div className="border-t border-[#dddddd] my-1" />
                 <button
                   type="button"
                   onClick={() => {
                     onRegenerateFull();
                     setRegenOpen(false);
                   }}
-                  className="w-full text-left px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50"
+                  className="w-full text-left px-3.5 py-2 text-xs text-[#aa2d00] hover:bg-[#fef2f2] transition-colors"
                 >
-                  <div className="font-semibold text-red-600">Full Solve</div>
-                  <div className="text-[10px] text-slate-400">Recomputes entire month</div>
+                  <div className="font-medium text-[#aa2d00]">Full Solve</div>
+                  <div className="text-[11px] text-[#41454d] mt-0.5">Recomputes entire month</div>
                 </button>
               </div>
             )}
           </div>
         )}
 
-        {/* Generate Primary Button */}
+        {/* Generate Primary Button - Airtable Near-Black CTA */}
         {canManage && onGenerate && (
           <button
             type="button"
             disabled={disabled || generating}
             onClick={onGenerate}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-md shadow-2xs disabled:opacity-50 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-[#181d26] hover:bg-[#0d1218] active:bg-[#000000] rounded-xl shadow-xs disabled:opacity-50 transition-colors"
           >
             {generating ? (
               <>
@@ -253,20 +253,20 @@ export function TopBar({
             <button
               type="button"
               onClick={() => setExportOpen(!exportOpen)}
-              className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md border border-slate-200 transition-colors"
+              className="p-1.5 text-[#41454d] hover:text-[#181d26] hover:bg-[#f8fafc] rounded-xl border border-[#dddddd] transition-colors"
               title="Export Roster"
             >
               <Download className="w-4 h-4" />
             </button>
             {exportOpen && (
-              <div className="absolute right-0 mt-1 w-36 bg-white border border-slate-200 rounded-md shadow-lg py-1 z-50">
+              <div className="absolute right-0 mt-1 w-40 bg-white border border-[#dddddd] rounded-xl shadow-lg py-1.5 z-50">
                 <button
                   type="button"
                   onClick={() => {
                     onExport('csv');
                     setExportOpen(false);
                   }}
-                  className="w-full text-left px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50"
+                  className="w-full text-left px-3.5 py-1.5 text-xs text-[#181d26] hover:bg-[#f8fafc] transition-colors font-medium"
                 >
                   Export CSV
                 </button>
@@ -276,7 +276,7 @@ export function TopBar({
                     onExport('xlsx');
                     setExportOpen(false);
                   }}
-                  className="w-full text-left px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50"
+                  className="w-full text-left px-3.5 py-1.5 text-xs text-[#181d26] hover:bg-[#f8fafc] transition-colors font-medium"
                 >
                   Export Excel (.xlsx)
                 </button>
@@ -290,19 +290,19 @@ export function TopBar({
           <button
             type="button"
             onClick={() => setProfileOpen(!profileOpen)}
-            className="flex items-center gap-2 p-1 rounded-full hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
+            className="flex items-center gap-2 p-1 rounded-full hover:bg-[#f8fafc] border border-transparent hover:border-[#dddddd] transition-colors"
             aria-label="User Profile"
           >
-            <div className="w-7 h-7 rounded-full bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center">
+            <div className="w-7 h-7 rounded-full bg-[#181d26] text-white font-semibold text-xs flex items-center justify-center">
               {user?.email?.charAt(0).toUpperCase() || 'U'}
             </div>
           </button>
 
           {profileOpen && (
-            <div className="absolute right-0 mt-1.5 w-60 bg-white border border-slate-200 rounded-lg shadow-lg py-2 z-50">
-              <div className="px-3 py-2 border-b border-slate-100">
-                <p className="text-xs font-semibold text-slate-900 truncate">{user?.email || 'Authenticated User'}</p>
-                <span className="inline-block mt-1 px-2 py-0.5 text-[10px] font-bold rounded-full bg-indigo-50 text-indigo-700 uppercase">
+            <div className="absolute right-0 mt-1.5 w-60 bg-white border border-[#dddddd] rounded-xl shadow-lg py-2 z-50">
+              <div className="px-3.5 py-2 border-b border-[#dddddd]">
+                <p className="text-xs font-semibold text-[#181d26] truncate">{user?.email || 'Authenticated User'}</p>
+                <span className="inline-block mt-1 px-2.5 py-0.5 text-[10px] font-semibold rounded-full bg-[#f8fafc] border border-[#dddddd] text-[#181d26] uppercase">
                   {userRole}
                 </span>
               </div>
@@ -310,7 +310,7 @@ export function TopBar({
                 <button
                   type="button"
                   onClick={() => signOut()}
-                  className="w-full px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors text-left"
+                  className="w-full px-3.5 py-2 text-xs font-medium text-[#aa2d00] hover:bg-[#fef2f2] flex items-center gap-2 transition-colors text-left"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                   <span>Sign Out</span>

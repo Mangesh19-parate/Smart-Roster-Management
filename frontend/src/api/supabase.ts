@@ -51,7 +51,18 @@ function notify(session: any) {
   }
 }
 
-export async function signIn(email: string, password: string) {
+export async function signIn(email: string, password: string): Promise<any> {
+  const isDemo = Boolean(
+    import.meta.env.VITE_DEMO_MODE === 'true' ||
+    !import.meta.env.VITE_SUPABASE_URL ||
+    import.meta.env.VITE_SUPABASE_URL.includes('placeholder')
+  );
+  if (isDemo) {
+    const roleKey = (Object.keys(DEMO_USERS) as (keyof typeof DEMO_USERS)[]).find(
+      (k) => DEMO_USERS[k].email.toLowerCase() === email.toLowerCase()
+    ) || 'manager';
+    return await signInDemo(roleKey);
+  }
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw error;
   return data;
@@ -120,7 +131,7 @@ export function onAuthStateChange(callback: (session: any) => void) {
 }
 
 // ponytail: instant local demo login without waiting on remote network timeouts
-export async function signInDemo(role: keyof typeof DEMO_USERS) {
+export async function signInDemo(role: keyof typeof DEMO_USERS): Promise<any> {
   const demoUser = DEMO_USERS[role];
   const isLive = Boolean(
     import.meta.env.VITE_SUPABASE_URL &&

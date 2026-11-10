@@ -1,5 +1,5 @@
 /**
- * Status color utilities
+ * Status color utilities inspired by Airtable's multi-select and status tags
  */
 
 export const STATUS_CODES: Record<string, string> = {
@@ -8,16 +8,17 @@ export const STATUS_CODES: Record<string, string> = {
   PH: 'PH',
   LEAVE: 'L',
   COMP_OFF: 'CO',
+  COVER: 'C',
 };
 
 export const STATUS_STYLES: Record<string, { bg: string; text: string; border: string }> = {
-  WORK: { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-200' },
-  WO: { bg: 'bg-slate-100', text: 'text-slate-600', border: 'border-slate-200' },
-  PH: { bg: 'bg-amber-100', text: 'text-amber-800', border: 'border-amber-200' },
-  LEAVE: { bg: 'bg-pink-100', text: 'text-pink-800', border: 'border-pink-200' },
-  COMP_OFF: { bg: 'bg-indigo-100', text: 'text-indigo-800', border: 'border-indigo-200' },
-  COVER: { bg: 'bg-cyan-100', text: 'text-cyan-800', border: 'border-cyan-200' },
-  CLOSED: { bg: 'bg-slate-200', text: 'text-slate-500', border: 'border-slate-300' },
+  WORK: { bg: 'bg-[#e8f5e9]', text: 'text-[#1b5e20]', border: 'border-[#c8e6c9]' },
+  WO: { bg: 'bg-[#f1f5f9]', text: 'text-[#334155]', border: 'border-[#e2e8f0]' },
+  PH: { bg: 'bg-[#fff8e1]', text: 'text-[#b45309]', border: 'border-[#fde68a]' },
+  LEAVE: { bg: 'bg-[#fce4ec]', text: 'text-[#9d174d]', border: 'border-[#fbcfe8]' },
+  COMP_OFF: { bg: 'bg-[#ede7f6]', text: 'text-[#5b21b6]', border: 'border-[#ddd6fe]' },
+  COVER: { bg: 'bg-[#e0f7fa]', text: 'text-[#0e7490]', border: 'border-[#a5f3fc]' },
+  CLOSED: { bg: 'bg-[#f1f5f9]', text: 'text-[#94a3b8]', border: 'border-[#cbd5e1]' },
 };
 
 // Type-safe getter that always returns a valid style

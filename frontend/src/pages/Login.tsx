@@ -1,10 +1,11 @@
 /**
- * Login Page - Supabase Auth with Demo Buttons
+ * Login Page - Airtable Inspired Auth Screen with Demo Buttons
  */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase, signInDemo, DEMO_USERS } from '../api/supabase';
+import { signIn, signInDemo, DEMO_USERS } from '../api/supabase';
 import { useAuth } from '../hooks/useAuth';
+import { CalendarCheck2 } from 'lucide-react';
 
 export function Login() {
   const navigate = useNavigate();
@@ -20,7 +21,7 @@ export function Login() {
     setError('');
     setLoading(true);
     try {
-      await supabase.auth.signInWithPassword({ email, password });
+      await signIn(email, password);
       await refreshUser();
       navigate('/');
     } catch (err: any) {
@@ -45,35 +46,39 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[#f8fafc] px-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
+        {/* Brand Logo Header */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-semibold text-slate-900">Smart Roster</h1>
-          <p className="text-slate-500 mt-1">Management System</p>
+          <div className="w-12 h-12 rounded-2xl bg-[#181d26] text-white flex items-center justify-center mx-auto mb-3 shadow-xs">
+            <CalendarCheck2 className="w-6 h-6" />
+          </div>
+          <h1 className="text-2xl font-semibold text-[#181d26] tracking-tight">Smart Roster</h1>
+          <p className="text-xs text-[#41454d] mt-1 font-normal">Airtable Operations Platform</p>
         </div>
 
         {/* Login Card */}
-        <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6">
+        <div className="bg-white rounded-2xl border border-[#dddddd] shadow-sm p-7">
           {/* Email/Password Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">
-                Email
+              <label htmlFor="email" className="block text-xs font-semibold text-[#181d26] uppercase tracking-wider mb-1.5">
+                Work Email
               </label>
               <input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                placeholder="name@company.com"
+                className="w-full px-3.5 py-2.5 text-sm border border-[#dddddd] rounded-xl focus:outline-none focus:border-[#181d26] text-[#181d26] transition-colors"
                 disabled={loading}
                 required
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">
+              <label htmlFor="password" className="block text-xs font-semibold text-[#181d26] uppercase tracking-wider mb-1.5">
                 Password
               </label>
               <input
@@ -81,14 +86,15 @@ export function Login() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                placeholder="••••••••"
+                className="w-full px-3.5 py-2.5 text-sm border border-[#dddddd] rounded-xl focus:outline-none focus:border-[#181d26] text-[#181d26] transition-colors"
                 disabled={loading}
                 required
               />
             </div>
 
             {error && (
-              <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+              <div className="p-3 text-xs text-[#aa2d00] bg-[#fef2f2] border border-[#fecaca] rounded-xl">
                 {error}
               </div>
             )}
@@ -96,9 +102,9 @@ export function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2 px-4 bg-indigo-600 text-white rounded-md font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full py-2.5 px-4 bg-[#181d26] text-white rounded-xl font-medium text-sm hover:bg-[#0d1218] active:bg-[#000000] focus:outline-none disabled:opacity-50 transition-colors shadow-xs"
             >
-              {loading ? 'Signing in...' : 'Sign in'}
+              {loading ? 'Signing in...' : 'Sign in to workspace'}
             </button>
           </form>
 
@@ -106,10 +112,10 @@ export function Login() {
           <div className="mt-6">
             <div className="relative mb-4">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200"></div>
+                <div className="w-full border-t border-[#dddddd]"></div>
               </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-slate-500">Demo Mode</span>
+              <div className="relative flex justify-center text-xs">
+                <span className="px-3 bg-white text-[#9297a0] font-medium">Quick Demo Access</span>
               </div>
             </div>
 
@@ -120,22 +126,22 @@ export function Login() {
                   type="button"
                   onClick={() => handleDemoLogin(key as keyof typeof DEMO_USERS)}
                   disabled={demoLoading !== null}
-                  className="py-2 px-3 border border-slate-300 rounded-md text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-50 transition-colors"
+                  className="py-2.5 px-2 bg-white border border-[#dddddd] hover:border-[#181d26] rounded-xl text-xs font-medium text-[#181d26] hover:bg-[#f8fafc] focus:outline-none disabled:opacity-50 transition-all text-center truncate shadow-xs"
                 >
-                  {demoLoading === key ? '...' : `Continue as ${user.role.replace('_', ' ')}`}
+                  {demoLoading === key ? '...' : `As ${user.role.replace('_', ' ')}`}
                 </button>
               ))}
             </div>
 
-            <p className="mt-4 text-xs text-slate-500 text-center">
-              Demo data resets daily.
+            <p className="mt-4 text-xs text-[#9297a0] text-center">
+              Self-contained sandbox with seed December 2026 data.
             </p>
           </div>
         </div>
 
         {/* Cold Start Notice */}
-        <div className="mt-4 text-center text-xs text-slate-500">
-          <p>Waking up the server, this can take up to 50 seconds on first request.</p>
+        <div className="mt-4 text-center text-xs text-[#9297a0]">
+          <p>Powered by Airtable-inspired workforce optimization</p>
         </div>
       </div>
     </div>

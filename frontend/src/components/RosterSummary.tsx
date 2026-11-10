@@ -1,5 +1,5 @@
 /**
- * RosterSummary - High-density operational metrics bar calculated from real data
+ * RosterSummary - Airtable Inspired High-Density Operational Metrics Bar
  */
 import { useMemo } from 'react';
 import { format } from 'date-fns';
@@ -75,73 +75,91 @@ export function RosterSummary({ rosterData, issues, month }: RosterSummaryProps)
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
       {/* Total Staff */}
-      <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-xs flex items-center gap-3">
-        <div className="p-2 rounded-md bg-indigo-50 text-indigo-600">
+      <div className="bg-white p-3 rounded-xl border border-[#dddddd] shadow-xs flex items-center gap-3">
+        <div className="p-2 rounded-lg bg-[#f8fafc] text-[#181d26] border border-[#dddddd]">
           <Users className="w-4 h-4" />
         </div>
         <div>
-          <span className="text-[11px] font-medium text-slate-500 block leading-tight">Total Staff</span>
-          <span className="text-lg font-bold text-slate-900 leading-none">{metrics.totalEmployees}</span>
+          <span className="text-[11px] font-medium text-[#41454d] block leading-tight">Total Staff</span>
+          <span className="text-lg font-semibold text-[#181d26] leading-none">{metrics.totalEmployees}</span>
         </div>
       </div>
 
       {/* Working */}
-      <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-xs flex items-center gap-3">
-        <div className="p-2 rounded-md bg-emerald-50 text-emerald-600">
+      <div className="bg-white p-3 rounded-xl border border-[#dddddd] shadow-xs flex items-center gap-3">
+        <div className="p-2 rounded-lg bg-[#e8f5e9] text-[#1b5e20] border border-[#c8e6c9]">
           <UserCheck className="w-4 h-4" />
         </div>
         <div>
-          <span className="text-[11px] font-medium text-slate-500 block leading-tight">Working ({dayLabel})</span>
-          <span className="text-lg font-bold text-slate-900 leading-none">{metrics.workingToday}</span>
+          <span className="text-[11px] font-medium text-[#41454d] block leading-tight">Working ({dayLabel})</span>
+          <span className="text-lg font-semibold text-[#181d26] leading-none">{metrics.workingToday}</span>
         </div>
       </div>
 
       {/* Weekly Off */}
-      <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-xs flex items-center gap-3">
-        <div className="p-2 rounded-md bg-slate-100 text-slate-600">
+      <div className="bg-white p-3 rounded-xl border border-[#dddddd] shadow-xs flex items-center gap-3">
+        <div className="p-2 rounded-lg bg-[#f1f5f9] text-[#334155] border border-[#e2e8f0]">
           <Coffee className="w-4 h-4" />
         </div>
         <div>
-          <span className="text-[11px] font-medium text-slate-500 block leading-tight">Weekly Off ({dayLabel})</span>
-          <span className="text-lg font-bold text-slate-900 leading-none">{metrics.weeklyOffToday}</span>
+          <span className="text-[11px] font-medium text-[#41454d] block leading-tight">Weekly Off ({dayLabel})</span>
+          <span className="text-lg font-semibold text-[#181d26] leading-none">{metrics.weeklyOffToday}</span>
         </div>
       </div>
 
       {/* On Leave */}
-      <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-xs flex items-center gap-3">
-        <div className="p-2 rounded-md bg-amber-50 text-amber-600">
+      <div className="bg-white p-3 rounded-xl border border-[#dddddd] shadow-xs flex items-center gap-3">
+        <div className="p-2 rounded-lg bg-[#fce4ec] text-[#9d174d] border border-[#fbcfe8]">
           <CalendarOff className="w-4 h-4" />
         </div>
         <div>
-          <span className="text-[11px] font-medium text-slate-500 block leading-tight">On Leave ({dayLabel})</span>
-          <span className="text-lg font-bold text-slate-900 leading-none">{metrics.onLeaveToday}</span>
+          <span className="text-[11px] font-medium text-[#41454d] block leading-tight">On Leave ({dayLabel})</span>
+          <span className="text-lg font-semibold text-[#181d26] leading-none">{metrics.onLeaveToday}</span>
         </div>
       </div>
 
       {/* Coverage Gaps */}
-      <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-xs flex items-center gap-3">
-        <div className={`p-2 rounded-md ${metrics.coverageGaps > 0 ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
+      <div className="bg-white p-3 rounded-xl border border-[#dddddd] shadow-xs flex items-center gap-3">
+        <div
+          className={`p-2 rounded-lg ${
+            metrics.coverageGaps > 0
+              ? 'bg-[#fef2f2] text-[#aa2d00] border border-[#fecaca]'
+              : 'bg-[#e8f5e9] text-[#1b5e20] border border-[#c8e6c9]'
+          }`}
+        >
           <AlertTriangle className="w-4 h-4" />
         </div>
         <div>
-          <span className="text-[11px] font-medium text-slate-500 block leading-tight">Coverage Gaps</span>
-          <span className={`text-lg font-bold leading-none ${metrics.coverageGaps > 0 ? 'text-red-600' : 'text-slate-900'}`}>
+          <span className="text-[11px] font-medium text-[#41454d] block leading-tight">Coverage Gaps</span>
+          <span
+            className={`text-lg font-semibold leading-none ${
+              metrics.coverageGaps > 0 ? 'text-[#aa2d00]' : 'text-[#181d26]'
+            }`}
+          >
             {metrics.coverageGaps}
           </span>
         </div>
       </div>
 
       {/* Scheduling Issues */}
-      <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-xs flex items-center gap-3">
-        <div className={`p-2 rounded-md ${metrics.criticalIssues > 0 ? 'bg-rose-50 text-rose-600' : metrics.warningIssues > 0 ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'}`}>
+      <div className="bg-white p-3 rounded-xl border border-[#dddddd] shadow-xs flex items-center gap-3">
+        <div
+          className={`p-2 rounded-lg ${
+            metrics.criticalIssues > 0
+              ? 'bg-[#fef2f2] text-[#aa2d00] border border-[#fecaca]'
+              : metrics.warningIssues > 0
+              ? 'bg-[#fff8e1] text-[#b45309] border border-[#fde68a]'
+              : 'bg-[#e8f5e9] text-[#1b5e20] border border-[#c8e6c9]'
+          }`}
+        >
           <ShieldCheck className="w-4 h-4" />
         </div>
         <div>
-          <span className="text-[11px] font-medium text-slate-500 block leading-tight">Scheduling Health</span>
+          <span className="text-[11px] font-medium text-[#41454d] block leading-tight">Scheduling Health</span>
           <div className="flex items-center gap-1.5 mt-0.5">
-            <span className="text-xs font-semibold text-rose-600">{metrics.criticalIssues} Crit</span>
-            <span className="text-xs text-slate-400">/</span>
-            <span className="text-xs font-semibold text-amber-600">{metrics.warningIssues} Warn</span>
+            <span className="text-xs font-semibold text-[#aa2d00]">{metrics.criticalIssues} Crit</span>
+            <span className="text-xs text-[#9297a0]">/</span>
+            <span className="text-xs font-semibold text-[#b45309]">{metrics.warningIssues} Warn</span>
           </div>
         </div>
       </div>

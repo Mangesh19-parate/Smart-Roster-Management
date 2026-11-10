@@ -1,5 +1,5 @@
 /**
- * ReportsView - Enterprise Hub for Structural Integrity and Workload Fairness Reports
+ * ReportsView - Airtable Inspired Enterprise Hub for Structural Integrity and Workload Fairness Reports
  */
 import { useState } from 'react';
 import { StructuralReport } from '../pages/StructuralReport';
@@ -15,18 +15,18 @@ export function ReportsView({ month }: ReportsViewProps) {
 
   return (
     <div className="space-y-4 max-w-7xl mx-auto pb-12">
-      {/* Tab Switcher */}
-      <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-2xs flex items-center justify-between">
-        <div className="inline-flex rounded-md p-1 bg-slate-100 border border-slate-200" role="tablist">
+      {/* Tab Switcher - Airtable Pill Switcher */}
+      <div className="bg-white p-2.5 rounded-xl border border-[#dddddd] shadow-xs flex items-center justify-between">
+        <div className="inline-flex rounded-xl p-0.5 bg-[#f8fafc] border border-[#dddddd]" role="tablist">
           <button
             type="button"
             role="tab"
             aria-selected={activeReport === 'structural'}
             onClick={() => setActiveReport('structural')}
-            className={`inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+            className={`inline-flex items-center gap-2 px-3.5 py-1.5 text-xs rounded-lg transition-all ${
               activeReport === 'structural'
-                ? 'bg-white text-indigo-700 shadow-xs font-bold'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-[#181d26] text-white shadow-xs font-medium'
+                : 'text-[#41454d] hover:text-[#181d26]'
             }`}
           >
             <FileCheck2 className="w-3.5 h-3.5" />
@@ -37,10 +37,10 @@ export function ReportsView({ month }: ReportsViewProps) {
             role="tab"
             aria-selected={activeReport === 'fairness'}
             onClick={() => setActiveReport('fairness')}
-            className={`inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+            className={`inline-flex items-center gap-2 px-3.5 py-1.5 text-xs rounded-lg transition-all ${
               activeReport === 'fairness'
-                ? 'bg-white text-indigo-700 shadow-xs font-bold'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-[#181d26] text-white shadow-xs font-medium'
+                : 'text-[#41454d] hover:text-[#181d26]'
             }`}
           >
             <Scale className="w-3.5 h-3.5" />
@@ -50,7 +50,7 @@ export function ReportsView({ month }: ReportsViewProps) {
       </div>
 
       {/* Embedded Report Container */}
-      <div className="bg-white rounded-lg border border-slate-200 shadow-2xs p-4 min-h-[500px]">
+      <div className="bg-white rounded-xl border border-[#dddddd] shadow-xs p-6 min-h-[500px]">
         {activeReport === 'structural' ? (
           <StructuralReport month={month} />
         ) : (

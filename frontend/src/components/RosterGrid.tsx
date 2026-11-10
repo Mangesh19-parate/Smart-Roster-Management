@@ -216,21 +216,21 @@ export function RosterGrid({
 
   if (filteredEmployees.length === 0) {
     return (
-      <div className="bg-white rounded-lg border border-slate-200 p-12 text-center shadow-xs">
-        <p className="text-sm font-medium text-slate-600">No employees match the current filters.</p>
-        <p className="text-xs text-slate-400 mt-1">Try clearing search terms or selecting another view.</p>
+      <div className="bg-white rounded-xl border border-[#dddddd] p-12 text-center shadow-xs">
+        <p className="text-sm font-medium text-[#181d26]">No employees match the current filters.</p>
+        <p className="text-xs text-[#41454d] mt-1">Try clearing search terms or selecting another view.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden flex flex-col">
+    <div className="bg-white rounded-xl border border-[#dddddd] shadow-xs overflow-hidden flex flex-col">
       <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-320px)] focus:outline-none">
         <table className="w-full border-collapse text-left" role="grid">
           {/* Header Row */}
-          <thead className="sticky top-0 z-20 bg-slate-50 border-b border-slate-200 select-none">
+          <thead className="sticky top-0 z-20 bg-[#f8fafc] border-b border-[#dddddd] select-none">
             <tr>
-              <th className="sticky left-0 z-30 w-48 min-w-48 max-w-48 px-3 py-2 text-xs font-semibold text-slate-700 uppercase tracking-wider bg-slate-50 border-r border-slate-200 shadow-[1px_0_0_0_#e2e8f0]">
+              <th className="sticky left-0 z-30 w-48 min-w-48 max-w-48 px-3 py-2 text-xs font-semibold text-[#181d26] uppercase tracking-wider bg-[#f8fafc] border-r border-[#dddddd] shadow-[1px_0_0_0_#dddddd]">
                 Employee
               </th>
               {days.map((day) => {
@@ -242,16 +242,16 @@ export function RosterGrid({
                   <th
                     key={dateKey}
                     id={`col-${dateKey}`}
-                    className={`sticky top-0 z-20 w-8.5 min-w-8.5 px-0.5 py-1.5 text-center text-xs font-medium border-r border-slate-200 transition-colors ${
+                    className={`sticky top-0 z-20 w-8.5 min-w-8.5 px-0.5 py-1.5 text-center text-xs font-medium border-r border-[#dddddd] transition-colors ${
                       isToday
-                        ? 'bg-indigo-50/90 text-indigo-900 font-bold'
+                        ? 'bg-[#181d26] text-white font-semibold'
                         : isWeekend
-                        ? 'bg-slate-100/70 text-slate-600'
-                        : 'bg-slate-50 text-slate-600'
+                        ? 'bg-[#f1f5f9] text-[#41454d]'
+                        : 'bg-[#f8fafc] text-[#41454d]'
                     }`}
                   >
                     <div className="text-[11px] leading-tight font-semibold">{format(day, 'd')}</div>
-                    <div className="text-[9px] uppercase tracking-tighter text-slate-400 leading-none">
+                    <div className={`text-[9px] uppercase tracking-tighter leading-none ${isToday ? 'text-slate-300' : 'text-[#9297a0]'}`}>
                       {format(day, 'EEE')}
                     </div>
                   </th>
@@ -261,32 +261,32 @@ export function RosterGrid({
           </thead>
 
           {/* Table Body */}
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-[#dddddd]">
             {filteredEmployees.map((employee, rowIndex) => {
               const isEven = rowIndex % 2 === 0;
 
               return (
                 <tr
                   key={employee.id}
-                  className={`hover:bg-indigo-50/20 transition-colors ${isEven ? 'bg-white' : 'bg-slate-50/40'}`}
+                  className={`hover:bg-[#f8fafc] transition-colors ${isEven ? 'bg-white' : 'bg-[#fafafa]'}`}
                 >
                   {/* Sticky Employee Column */}
                   <td
-                    className={`sticky left-0 z-10 w-48 min-w-48 max-w-48 px-3 py-1.5 border-r border-slate-200 shadow-[1px_0_0_0_#e2e8f0] ${
-                      isEven ? 'bg-white' : 'bg-slate-50/95'
+                    className={`sticky left-0 z-10 w-48 min-w-48 max-w-48 px-3 py-1.5 border-r border-[#dddddd] shadow-[1px_0_0_0_#dddddd] ${
+                      isEven ? 'bg-white' : 'bg-[#fafafa]'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-1">
-                      <span className="font-semibold text-xs text-slate-900 truncate" title={employee.name}>
+                      <span className="font-medium text-xs text-[#181d26] truncate" title={employee.name}>
                         {employee.name}
                       </span>
                       {employee.pod && (
-                        <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded">
+                        <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.2 bg-[#f8fafc] border border-[#dddddd] text-[#41454d] rounded-md">
                           {employee.pod}
                         </span>
                       )}
                     </div>
-                    <div className="text-[10px] text-slate-400 truncate mt-0.5">{employee.role}</div>
+                    <div className="text-[10px] text-[#9297a0] truncate mt-0.5">{employee.role}</div>
                   </td>
 
                   {/* Grid Cells */}
@@ -304,7 +304,7 @@ export function RosterGrid({
                       return (
                         <td
                           key={date}
-                          className="w-8.5 min-w-8.5 h-8 border-r border-slate-100 bg-slate-50/20"
+                          className="w-8.5 min-w-8.5 h-8 border-r border-[#dddddd] bg-[#f8fafc]/30"
                         />
                       );
                     }
@@ -324,26 +324,26 @@ export function RosterGrid({
                             onIssueClick(cellIssues[0]);
                           }
                         }}
-                        className={`relative w-8.5 min-w-8.5 h-8 p-0 border-r border-slate-200/80 cursor-pointer select-none text-center transition-all ${
-                          isToday ? 'bg-indigo-50/30' : ''
+                        className={`relative w-8.5 min-w-8.5 h-8 p-0 border-r border-[#dddddd] cursor-pointer select-none text-center transition-all ${
+                          isToday ? 'bg-[#f8fafc]' : ''
                         }`}
                         title={`${employee.name} • ${format(day, 'MMM d')} • ${status}${isLocked ? ' (Locked)' : ''}`}
                       >
                         <div
-                          className={`w-full h-full flex items-center justify-center text-[11px] font-semibold transition-all relative ${styles.bg} ${styles.text} hover:opacity-85 ${
+                          className={`w-full h-full flex items-center justify-center text-[11px] font-medium transition-all relative ${styles.bg} ${styles.text} hover:opacity-90 ${
                             severity === 'ERROR'
-                              ? 'ring-2 ring-red-500 ring-inset z-10'
+                              ? 'ring-2 ring-[#aa2d00] ring-inset z-10'
                               : severity === 'WARNING'
-                              ? 'ring-2 ring-amber-500 ring-inset z-10'
+                              ? 'ring-2 ring-[#d9a441] ring-inset z-10'
                               : ''
-                          } ${isSelected ? 'ring-2 ring-indigo-600 ring-offset-1 z-10' : ''}`}
+                          } ${isSelected ? 'ring-2 ring-[#181d26] ring-offset-1 z-10' : ''}`}
                         >
                           <span>{code}</span>
 
                           {/* Lock Indicator */}
                           {isLocked && (
                             <span className="absolute top-0.5 right-0.5" title="Locked Shift">
-                              <Lock className="w-2.5 h-2.5 text-slate-700/80 stroke-[2.5]" />
+                              <Lock className="w-2.5 h-2.5 text-[#181d26] stroke-[2.5]" />
                             </span>
                           )}
 
@@ -351,7 +351,7 @@ export function RosterGrid({
                           {severity && (
                             <span
                               className={`absolute bottom-0.5 right-0.5 w-1.5 h-1.5 rounded-full ${
-                                severity === 'ERROR' ? 'bg-red-600' : 'bg-amber-500'
+                                severity === 'ERROR' ? 'bg-[#aa2d00]' : 'bg-[#d9a441]'
                               }`}
                             />
                           )}

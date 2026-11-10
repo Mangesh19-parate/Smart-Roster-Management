@@ -82,12 +82,13 @@ export function EmployeeAgenda({
   return (
     <div className="space-y-4">
       {/* Employee Header */}
-      <div className="bg-white border border-slate-200 rounded-lg p-4">
+      <div className="bg-white border border-[#dddddd] rounded-xl p-4 shadow-xs">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">{employee.name}</h2>
-            <div className="flex items-center gap-3 mt-1 text-sm text-slate-500">
+            <h2 className="text-lg font-bold text-[#181d26]">{employee.name}</h2>
+            <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 font-medium">
               <span>Pod: {employee.pod?.name || 'N/A'}</span>
+              <span>•</span>
               <span>Role: {employee.role}</span>
             </div>
           </div>
@@ -107,7 +108,7 @@ export function EmployeeAgenda({
           />
           <Counter
             label="Leaves"
-            value={Array.from(employeeEntries.values()).filter((e) => e.status === 'LEAVE').length}
+            value={Array.from(employeeEntries.values()).filter((e) => e.status === 'pink').length}
             color="pink"
           />
           <Counter
@@ -119,9 +120,9 @@ export function EmployeeAgenda({
       </div>
 
       {/* Calendar */}
-      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
-        <div className="p-3 border-b border-slate-200 bg-slate-50">
-          <h3 className="font-medium text-slate-900">Monthly Calendar</h3>
+      <div className="bg-white border border-[#dddddd] rounded-xl overflow-hidden shadow-xs">
+        <div className="p-3 border-b border-[#dddddd] bg-[#f8fafc]">
+          <h3 className="text-xs font-bold text-[#181d26] uppercase tracking-wider">Monthly Calendar</h3>
         </div>
         <div className="p-3 space-y-2 max-h-[60vh] overflow-y-auto">
           {days.map((day) => {
@@ -158,29 +159,29 @@ export function EmployeeAgenda({
                   e.preventDefault();
                   if (cellIssues.length > 0) onIssueClick(cellIssues[0]);
                 }}
-                className={`w-full flex items-center gap-3 p-3 rounded-md border transition-colors ${
-                  isSelected ? 'ring-2 ring-indigo-500 bg-indigo-50' : 'hover:bg-slate-50'
-                } ${severity === 'ERROR' ? 'border-red-300' : severity === 'WARNING' ? 'border-amber-300' : 'border-slate-200'}`}
+                className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-colors ${
+                  isSelected ? 'ring-2 ring-[#181d26] bg-[#f1f5f9]' : 'hover:bg-[#f8fafc]'
+                } ${severity === 'ERROR' ? 'border-red-300' : severity === 'WARNING' ? 'border-amber-300' : 'border-[#dddddd]'}`}
               >
                 <div className="flex flex-col items-start w-24">
-                  <span className="font-medium text-sm text-slate-900">{format(day, 'MMM d')}</span>
-                  <span className="text-xs text-slate-500">{format(day, 'EEEE')}</span>
+                  <span className="font-semibold text-sm text-[#181d26]">{format(day, 'MMM d')}</span>
+                  <span className="text-xs text-slate-400">{format(day, 'EEEE')}</span>
                 </div>
-                <div className={`flex-1 ${styleBg} ${styleBorder} rounded-md px-3 py-1.5 text-center text-sm font-medium ${styleText}`}>
+                <div className={`flex-1 ${styleBg} ${styleBorder} rounded-full px-3 py-1 text-center text-xs font-semibold ${styleText}`}>
                   {STATUS_LABELS[status] || status}
-                  <span className="ml-2 text-xs opacity-70">({code})</span>
+                  <span className="ml-1.5 text-xs opacity-70">({code})</span>
                 </div>
                 {cellIssues.length > 0 && (
                   <div className="flex gap-1">
                     {cellIssues.map((issue: any) => (
                       <span
                         key={issue.id}
-                        className={`px-1.5 py-0.5 text-xs font-medium rounded-full ${
+                        className={`px-2 py-0.5 text-xs font-medium rounded-full ${
                           issue.severity === 'ERROR'
-                            ? 'bg-red-100 text-red-700'
+                            ? 'bg-[#fce4ec] text-[#aa2d00] border border-[#f8bbd0]'
                             : issue.severity === 'WARNING'
-                              ? 'bg-amber-100 text-amber-700'
-                              : 'bg-slate-100 text-slate-700'
+                              ? 'bg-[#fff8e1] text-[#b45309] border border-[#ffecb3]'
+                              : 'bg-[#f1f5f9] text-[#181d26] border border-[#dddddd]'
                         }`}
                       >
                         {issue.rule}
@@ -195,9 +196,9 @@ export function EmployeeAgenda({
       </div>
 
       {/* Legend */}
-      <div className="bg-white border border-slate-200 rounded-lg p-3">
-        <h4 className="font-medium text-slate-900 mb-2">Legend</h4>
-        <div className="flex flex-wrap gap-3 text-sm">
+      <div className="bg-white border border-[#dddddd] rounded-xl p-3 shadow-xs">
+        <h4 className="text-xs font-bold text-[#181d26] uppercase tracking-wider mb-2">Legend</h4>
+        <div className="flex flex-wrap gap-2 text-xs">
           {Object.entries(STATUS_LABELS).map(([key, label]) => {
             const styles = getStatusStyle(key);
             const code = STATUS_CODES[key] ?? '?';
@@ -205,8 +206,8 @@ export function EmployeeAgenda({
             const styleText = styles.text;
             const styleBorder = styles.border;
             return (
-              <span key={key} className={`inline-flex items-center gap-1 ${styleBg} ${styleBorder} rounded px-2 py-1 ${styleText}`}>
-                <span className="font-mono">{code}</span> {label}
+              <span key={key} className={`inline-flex items-center gap-1.5 ${styleBg} ${styleBorder} rounded-full px-2.5 py-1 font-medium ${styleText}`}>
+                <span className="font-mono font-bold text-[11px]">{code}</span> {label}
               </span>
             );
           })}

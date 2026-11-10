@@ -1,53 +1,78 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: Inter, system-ui, sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   --font-mono: ui-monospace, Consolas, monospace;
 
-  --color-primary: #4F46E5;
-  --color-primary-hover: #4338CA;
-  --color-primary-light: #EEF2FF;
+  /* Airtable Brand Palette */
+  --color-primary: #181d26;
+  --color-primary-hover: #0d1218;
+  --color-primary-light: #f8fafc;
 
-  --color-neutral-dark: #0F172A;
-  --color-neutral-medium: #475569;
-  --color-neutral-light: #94A3B8;
-  --color-neutral-border: #E2E8F0;
-  --color-neutral-surface: #F8FAFC;
-  --color-neutral-white: #FFFFFF;
+  --color-ink: #181d26;
+  --color-ink-body: #333840;
+  --color-ink-muted: #41454d;
+  --color-hairline: #dddddd;
+  --color-border-strong: #9297a0;
 
-  --color-status-working-bg: #DCFCE7;
-  --color-status-working-text: #166534;
-  --color-status-wo-bg: #E2E8F0;
+  --color-canvas: #ffffff;
+  --color-surface-soft: #f8fafc;
+  --color-surface-strong: #e0e2e6;
+  --color-surface-dark: #181d26;
+  --color-surface-dark-elevated: #1d1f25;
+
+  /* Airtable Signature Palette */
+  --color-signature-coral: #aa2d00;
+  --color-signature-forest: #0a2e0e;
+  --color-signature-cream: #f5e9d4;
+  --color-signature-peach: #fcab79;
+  --color-signature-mint: #a8d8c4;
+  --color-signature-yellow: #f4d35e;
+  --color-signature-mustard: #d9a441;
+
+  --color-link: #1b61c9;
+  --color-link-active: #1a3866;
+
+  /* Airtable Grid Pills */
+  --color-status-working-bg: #e8f5e9;
+  --color-status-working-text: #1b5e20;
+  --color-status-working-border: #c8e6c9;
+
+  --color-status-wo-bg: #f1f5f9;
   --color-status-wo-text: #334155;
-  --color-status-ph-bg: #FEF3C7;
-  --color-status-ph-text: #92400E;
-  --color-status-leave-bg: #FCE7F3;
-  --color-status-leave-text: #9D174D;
-  --color-status-compoff-bg: #E0E7FF;
-  --color-status-compoff-text: #3730A3;
-  --color-status-cover-bg: #CFFAFE;
-  --color-status-cover-text: #155E75;
+  --color-status-wo-border: #e2e8f0;
 
-  --color-coverage-full: #16A34A;
-  --color-coverage-min: #F59E0B;
-  --color-coverage-gap: #DC2626;
-  --color-coverage-closed: #CBD5E1;
+  --color-status-ph-bg: #fff8e1;
+  --color-status-ph-text: #b45309;
+  --color-status-ph-border: #fde68a;
 
-  --spacing-1: 4px;
-  --spacing-2: 8px;
-  --spacing-3: 16px;
-  --spacing-4: 24px;
-  --spacing-5: 32px;
-  --spacing-6: 48px;
-  --spacing-7: 64px;
+  --color-status-leave-bg: #fce4ec;
+  --color-status-leave-text: #9d174d;
+  --color-status-leave-border: #fbcfe8;
 
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
+  --color-status-compoff-bg: #ede7f6;
+  --color-status-compoff-text: #5b21b6;
+  --color-status-compoff-border: #ddd6fe;
+
+  --color-status-cover-bg: #e0f7fa;
+  --color-status-cover-text: #0e7490;
+  --color-status-cover-border: #a5f3fc;
+
+  --color-coverage-full: #006400;
+  --color-coverage-min: #d9a441;
+  --color-coverage-gap: #aa2d00;
+  --color-coverage-closed: #cbd5e1;
+
+  --radius-xs: 2px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-pill: 9999px;
   --radius-full: 9999px;
 
-  --shadow-sm: 0 1px 2px rgba(15,23,42,0.06);
-  --shadow-md: 0 4px 12px rgba(15,23,42,0.12);
+  --shadow-airtable: 0 1px 3px rgba(24, 29, 38, 0.08), 0 1px 2px rgba(24, 29, 38, 0.04);
+  --shadow-airtable-md: 0 4px 14px rgba(24, 29, 38, 0.1);
+  --shadow-airtable-lg: 0 10px 25px rgba(24, 29, 38, 0.12);
 }
 
 * {
@@ -63,25 +88,64 @@ html, body, #root {
 body {
   font-family: var(--font-sans);
   font-size: 14px;
-  line-height: 1.5;
-  color: var(--color-neutral-dark);
-  background-color: var(--color-neutral-surface);
+  line-height: 1.45;
+  color: var(--color-ink-body);
+  background-color: var(--color-surface-soft);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Airtable Button Pair Classes */
+.btn-airtable-primary {
+  background-color: #181d26;
+  color: #ffffff;
+  border-radius: 12px;
+  font-weight: 500;
+  transition: all 150ms ease;
+}
+.btn-airtable-primary:hover {
+  background-color: #0d1218;
+}
+.btn-airtable-primary:active {
+  background-color: #000000;
+}
+
+.btn-airtable-secondary {
+  background-color: #ffffff;
+  color: #181d26;
+  border: 1px solid #dddddd;
+  border-radius: 12px;
+  font-weight: 500;
+  transition: all 150ms ease;
+}
+.btn-airtable-secondary:hover {
+  background-color: #f8fafc;
+  border-color: #9297a0;
+}
+
+.btn-airtable-pill {
+  background-color: #ffffff;
+  color: #181d26;
+  border: 1px solid #dddddd;
+  border-radius: 9999px;
+  font-weight: 500;
+  transition: all 150ms ease;
+}
+.btn-airtable-pill:hover {
+  background-color: #f8fafc;
+  border-color: #181d26;
 }
 
 /* Focus styles */
 *:focus-visible {
   outline: none;
-  ring: 2px;
-  ring-color: var(--color-primary);
-  ring-offset: 2px;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #181d26;
 }
 
-/* Scrollbar styling */
+/* Airtable Crisp Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
 }
 
 ::-webkit-scrollbar-track {
@@ -89,22 +153,22 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-neutral-border);
-  border-radius: 4px;
+  background: #dddddd;
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-neutral-light);
+  background: #9297a0;
 }
 
 /* Grid cell animations */
 @keyframes cell-update {
-  0% { background-color: var(--color-primary-light); }
+  0% { background-color: #f5e9d4; }
   100% { background-color: inherit; }
 }
 
 .cell-updated {
-  animation: cell-update 500ms ease-out;
+  animation: cell-update 400ms ease-out;
 }
 
 /* Loading skeletons */
@@ -114,7 +178,7 @@ body {
 }
 
 .skeleton {
-  background: linear-gradient(90deg, var(--color-neutral-surface) 25%, var(--color-neutral-border) 50%, var(--color-neutral-surface) 75%);
+  background: linear-gradient(90deg, #f8fafc 25%, #e0e2e6 50%, #f8fafc 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }

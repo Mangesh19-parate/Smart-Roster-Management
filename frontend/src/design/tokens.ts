@@ -1,78 +1,111 @@
 /**
  * Design tokens for Smart Roster Management.
- * Based on docs/DESIGN.md
+ * Based on Airtable design system (frontend/DESIGN.md)
  */
 
 export const colors = {
-  // Brand colors
+  // Airtable Brand colors
   primary: {
-    DEFAULT: '#4F46E5', // Indigo
-    hover: '#4338CA',
-    light: '#EEF2FF',
+    DEFAULT: '#181d26', // Near-black ink
+    hover: '#0d1218',
+    active: '#0d1218',
+    light: '#f8fafc',
   },
-  neutral: {
-    dark: '#0F172A', // Slate
-    medium: '#475569',
-    light: '#94A3B8',
-    border: '#E2E8F0',
-    surface: '#F8FAFC', // Off-white
-    white: '#FFFFFF',
+  ink: {
+    DEFAULT: '#181d26',
+    body: '#333840',
+    muted: '#41454d',
+    hairline: '#dddddd',
+    borderStrong: '#9297a0',
   },
-  // Semantic status colors (fixed)
+  surface: {
+    canvas: '#ffffff',
+    soft: '#f8fafc',
+    strong: '#e0e2e6',
+    dark: '#181d26',
+    darkElevated: '#1d1f25',
+  },
+  // Airtable Signature Cards
+  signature: {
+    coral: '#aa2d00',
+    forest: '#0a2e0e',
+    cream: '#f5e9d4',
+    peach: '#fcab79',
+    mint: '#a8d8c4',
+    yellow: '#f4d35e',
+    mustard: '#d9a441',
+  },
+  link: {
+    DEFAULT: '#1b61c9',
+    active: '#1a3866',
+  },
+  // Airtable Grid Pill Status Colors
   status: {
-    working: { bg: '#DCFCE7', text: '#166534', code: 'W' },
-    weeklyOff: { bg: '#E2E8F0', text: '#334155', code: 'WO' },
-    publicHoliday: { bg: '#FEF3C7', text: '#92400E', code: 'PH' },
-    leave: { bg: '#FCE7F3', text: '#9D174D', code: 'L' },
-    compOff: { bg: '#E0E7FF', text: '#3730A3', code: 'CO' },
-    cover: { bg: '#CFFAFE', text: '#155E75', code: 'C' },
+    working: { bg: '#e8f5e9', text: '#1b5e20', border: '#c8e6c9', code: 'W' },
+    weeklyOff: { bg: '#f1f5f9', text: '#334155', border: '#e2e8f0', code: 'WO' },
+    publicHoliday: { bg: '#fff8e1', text: '#b45309', border: '#fde68a', code: 'PH' },
+    leave: { bg: '#fce4ec', text: '#9d174d', border: '#fbcfe8', code: 'L' },
+    compOff: { bg: '#ede7f6', text: '#5b21b6', border: '#ddd6fe', code: 'CO' },
+    cover: { bg: '#e0f7fa', text: '#0e7490', border: '#a5f3fc', code: 'C' },
   },
   // Coverage colors
   coverage: {
-    fullyCovered: '#16A34A',
-    atMinimum: '#F59E0B',
-    gap: '#DC2626',
-    closed: '#CBD5E1',
+    fullyCovered: '#006400',
+    atMinimum: '#d9a441',
+    gap: '#aa2d00',
+    closed: '#cbd5e1',
   },
   // Severity colors
   severity: {
-    error: { bg: '#FEF2F2', text: '#DC2626', border: '#FECACA' },
-    warning: { bg: '#FFFBEB', text: '#F59E0B', border: '#FDE68A' },
-    info: { bg: '#F1F5F9', text: '#475569', border: '#E2E8F0' },
+    error: { bg: '#fef2f2', text: '#aa2d00', border: '#fecaca' },
+    warning: { bg: '#fffbeb', text: '#b45309', border: '#fde68a' },
+    info: { bg: '#f0f9ff', text: '#254fad', border: '#bae6fd' },
   },
 };
 
 export const spacing = {
   0: '0',
-  1: '4px',
-  2: '8px',
-  3: '16px',
-  4: '24px',
-  5: '32px',
-  6: '48px',
-  7: '64px',
+  xxs: '4px',
+  xs: '8px',
+  sm: '12px',
+  md: '16px',
+  lg: '24px',
+  xl: '32px',
+  xxl: '48px',
+  section: '96px',
 };
 
 export const borderRadius = {
-  sm: '4px', // grid cells
-  md: '6px', // inputs, buttons
-  lg: '8px', // cards
-  full: '9999px', // badges
+  xs: '2px',
+  sm: '6px', // inputs, table cells
+  md: '10px', // cards
+  lg: '12px', // Airtable primary CTAs & signature cards
+  pill: '9999px', // Airtable pills
+  full: '9999px',
 };
 
 export const shadows = {
-  sm: '0 1px 2px rgba(15,23,42,0.06)', // cards
-  md: '0 4px 12px rgba(15,23,42,0.12)', // popovers, drawers
+  xs: '0 1px 2px rgba(24,29,38,0.05)',
+  sm: '0 1px 3px rgba(24,29,38,0.08), 0 1px 2px rgba(24,29,38,0.04)',
+  md: '0 4px 14px rgba(24,29,38,0.1)',
+  lg: '0 10px 25px rgba(24,29,38,0.12)',
 };
 
 export const typography = {
-  fontFamily: 'Inter, system-ui, sans-serif',
+  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif',
   sizes: {
-    pageTitle: '24px',
-    sectionTitle: '18px',
+    displayXl: '48px',
+    displayLg: '40px',
+    displayMd: '32px',
+    titleLg: '24px',
+    titleMd: '20px',
+    titleSm: '18px',
+    labelMd: '16px',
+    button: '16px',
     body: '14px',
+    caption: '13px',
+    legal: '12px',
     gridCell: '12px',
-    caption: '12px',
   },
   weights: {
     normal: 400,
