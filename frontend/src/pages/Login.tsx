@@ -54,7 +54,6 @@ export function Login() {
             <CalendarCheck2 className="w-6 h-6" />
           </div>
           <h1 className="text-2xl font-semibold text-[#181d26] tracking-tight">Smart Roster</h1>
-          <p className="text-xs text-[#41454d] mt-1 font-normal">Airtable Operations Platform</p>
         </div>
 
         {/* Login Card */}
@@ -137,11 +136,6 @@ export function Login() {
               Self-contained sandbox with seed December 2026 data.
             </p>
           </div>
-        </div>
-
-        {/* Cold Start Notice */}
-        <div className="mt-4 text-center text-xs text-[#9297a0]">
-          <p>Powered by Airtable-inspired workforce optimization</p>
         </div>
       </div>
     </div>
